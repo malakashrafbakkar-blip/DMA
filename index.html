@@ -1,0 +1,1659 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1B2F8F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="DMA">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>DMA لتنظيم الوقت</title>
+<meta name="description" content="DMA: تطبيق مجاني بالعربي لتنظيم وقت المذاكرة. مؤقت تركيز، مواد ومواعيد دروس، ورد القرآن والأذكار، وعبارات تحفيزية.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@500&family=Amiri+Quran&display=swap">
+<style>
+/* Layout: three views under a tab bar. Today = timer dial (right) + tasks/week (left); Study = subjects + center lessons; Worship = wird, Al-Kahf, adhkar, settings. One column on phones. */
+:root {
+  --bg: #EDF0EE;
+  --surface: #F8FAF9;
+  --surface-2: #E1E7E4;
+  --fg: #12211D;
+  --muted: #566661;
+  --line: #CBD3CF;
+  --accent: #2443C8;
+  --on-accent: #FFFFFF;
+  --accent-soft: #DCE2F8;
+  --gold: #B27F14;
+  --tick: #C3CCC8;
+  --bar: #B4C0F0;
+  --ok: #1F7A55;
+  --on-ok: #FFFFFF;
+  --c0: #2F52D6; --c1: #0F8A7D; --c2: #B27F14; --c3: #C4503B; --c4: #8A3FA0; --c5: #5F8A1F;
+  --display: "Reem Kufi", "IBM Plex Sans Arabic", Tahoma, sans-serif;
+  --body: "IBM Plex Sans Arabic", Tahoma, "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1513; --surface: #131E1B; --surface-2: #1A2824; --fg: #E4ECE8; --muted: #93A59E; --line: #26362F;
+    --accent: #8EA2FF; --on-accent: #0D1513; --accent-soft: #1E2850; --gold: #E0B650; --tick: #2D3D37; --bar: #34427E;
+    --ok: #6FD1A3; --on-ok: #0D1513;
+    --c0: #8EA2FF; --c1: #4FD1C0; --c2: #E0B650; --c3: #FF8F7A; --c4: #D79CF0; --c5: #A8C75A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1513; --surface: #131E1B; --surface-2: #1A2824; --fg: #E4ECE8; --muted: #93A59E; --line: #26362F;
+  --accent: #8EA2FF; --on-accent: #0D1513; --accent-soft: #1E2850; --gold: #E0B650; --tick: #2D3D37; --bar: #34427E;
+  --ok: #6FD1A3; --on-ok: #0D1513;
+  --c0: #8EA2FF; --c1: #4FD1C0; --c2: #E0B650; --c3: #FF8F7A; --c4: #D79CF0; --c5: #A8C75A;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+button { font: inherit; color: inherit; }
+a { color: var(--accent); }
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.page { max-width: 1040px; margin: 0 auto; }
+
+/* header + tabs */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 40px; margin-bottom: 20px; }
+.brand h1 { font-family: var(--display); font-weight: 600; font-size: 2.3rem; line-height: 1.1; margin: 0; }
+.brand p { margin: 4px 0 0; color: var(--muted); }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 32px; }
+.stat b { display: block; font-family: var(--display); font-weight: 500; font-size: 1.7rem; line-height: 1.2; font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; text-align: start; }
+.stat span { font-size: .82rem; color: var(--muted); }
+.next { margin: 0 0 18px; color: var(--muted); font-size: .95rem; }
+.next b { color: var(--fg); font-weight: 600; }
+.tabs { display: flex; gap: 4px; padding: 4px; background: var(--surface-2); border-radius: 14px; margin-bottom: 26px; max-width: 520px; }
+.tabs button { flex: 1; min-width: 0; border: 0; background: transparent; padding: 10px 6px; border-radius: 10px; cursor: pointer; color: var(--muted); font-weight: 500; }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--fg); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
+
+/* layout */
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+@media (min-width: 860px) { .grid { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); align-items: start; gap: 48px; } .cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; } }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 36px; align-items: start; }
+.stack { display: flex; flex-direction: column; gap: 36px; min-width: 0; }
+
+/* shared pieces */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.sec-head h2 { font-family: var(--display); font-weight: 500; font-size: 1.35rem; margin: 0; }
+.sec-head small { color: var(--muted); font-size: .85rem; }
+.sub-h { font-size: .95rem; font-weight: 600; margin: 22px 0 8px; }
+.btn { border: 0; border-radius: 12px; padding: 12px 18px; font-weight: 600; cursor: pointer; background: var(--accent); color: var(--on-accent); text-decoration: none; display: inline-block; text-align: center; }
+.btn:hover { filter: brightness(1.08); }
+.btn.primary { flex: 1; font-size: 1.05rem; }
+.btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); font-weight: 500; }
+.btn:disabled { opacity: .4; cursor: default; filter: none; }
+.in { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 12px; padding: 10px 12px; font: inherit; min-width: 0; width: 100%; }
+.in::placeholder { color: var(--muted); }
+.in:disabled { opacity: .6; }
+.fld { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fld > label { font-size: .8rem; color: var(--muted); }
+.icon-btn { flex: none; width: 36px; height: 36px; border-radius: 10px; border: 0; background: transparent; color: var(--muted); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.icon-btn:hover { background: var(--surface-2); color: var(--fg); }
+.icon-btn.on { color: var(--accent); }
+.empty { color: var(--muted); margin: 16px 0 8px; }
+.msg { min-height: 1.5em; margin: 8px 0 0; font-size: .9rem; color: var(--gold); }
+.pill { display: inline-block; font-size: .78rem; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.pill.ok { background: var(--ok); border-color: var(--ok); color: var(--on-ok); }
+.pill.need { border-color: var(--gold); color: var(--gold); }
+.sw { width: 10px; height: 10px; border-radius: 50%; flex: none; display: inline-block; }
+.c0 { background: var(--c0); } .c1 { background: var(--c1); } .c2 { background: var(--c2); } .c3 { background: var(--c3); } .c4 { background: var(--c4); } .c5 { background: var(--c5); }
+.note-s { font-size: .82rem; color: var(--muted); margin: 10px 0 0; }
+
+/* timer card */
+.modes { display: flex; gap: 6px; padding: 4px; background: var(--surface-2); border-radius: 12px; }
+.modes button { flex: 1; min-width: 0; border: 0; background: transparent; padding: 8px 4px; border-radius: 9px; font-size: .85rem; cursor: pointer; color: var(--muted); }
+.modes button[aria-pressed="true"] { background: var(--surface); color: var(--fg); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
+.modes button:disabled { cursor: default; opacity: .6; }
+.dial { position: relative; width: min(100%, 300px); aspect-ratio: 1; margin: 20px auto 10px; }
+.locked .dial svg { opacity: .45; }
+.dial svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tick { stroke: var(--tick); stroke-width: 3; stroke-linecap: round; transition: stroke .25s; }
+.tick.major { stroke-width: 4.5; }
+.tick.on { stroke: var(--accent); }
+[data-mode="short"] .tick.on, [data-mode="long"] .tick.on { stroke: var(--gold); }
+.dial-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0 22%; text-align: center; }
+.dial-label { font-size: .9rem; color: var(--muted); }
+.dial-time { font-family: var(--mono); font-weight: 500; font-size: clamp(2.6rem, 12vw, 3.5rem); line-height: 1.1; letter-spacing: -.02em; direction: ltr; font-variant-numeric: tabular-nums; }
+.dial-task { font-size: .85rem; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.4em; }
+.lens { display: flex; justify-content: center; gap: 8px; margin: 6px 0 14px; }
+.lens button { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 4px 14px; font-size: .85rem; cursor: pointer; color: var(--muted); }
+.lens button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.lens button:disabled { cursor: default; opacity: .5; }
+.controls { display: flex; gap: 8px; margin-top: 8px; }
+.note { min-height: 1.6em; margin: 12px 0 0; font-size: .9rem; color: var(--muted); text-align: center; }
+.gate { margin-top: 14px; padding: 14px; border: 1px dashed var(--gold); border-radius: 12px; background: var(--surface-2); }
+.gate h3 { margin: 0 0 8px; font-size: 1rem; }
+.gate ul { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 6px; }
+.gate li { display: flex; gap: 10px; align-items: center; font-size: .92rem; }
+.gate .m { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--muted); flex: none; display: grid; place-items: center; color: transparent; }
+.gate li.ok .m { background: var(--ok); border-color: var(--ok); color: var(--on-ok); }
+.gate .btn { width: 100%; }
+
+/* tasks */
+.add { display: flex; gap: 8px; flex-wrap: wrap; }
+.add .in { flex: 1 1 160px; }
+.add select.in { flex: 0 1 140px; }
+.task { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--line); }
+.task.current { background: var(--accent-soft); border-radius: 12px; padding-inline: 12px; border-bottom-color: transparent; }
+.check { flex: none; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--muted); background: transparent; display: grid; place-items: center; cursor: pointer; padding: 0; color: transparent; }
+.check:hover { border-color: var(--accent); }
+.check.on { background: var(--ok); border-color: var(--ok); color: var(--on-ok); }
+.t-body { flex: 1; min-width: 0; }
+.t-title { overflow-wrap: anywhere; }
+.task.is-done .t-title { text-decoration: line-through; color: var(--muted); }
+.t-meta { font-size: .8rem; color: var(--muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: .9rem; }
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+details.done { margin-top: 14px; }
+details.done summary { cursor: pointer; color: var(--muted); font-size: .9rem; padding: 6px 0; }
+
+/* week chart + subject bars */
+.plot { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-items: end; height: 150px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; min-width: 0; }
+.col .v { font-family: var(--mono); font-size: .72rem; color: var(--muted); height: 1.1em; direction: ltr; }
+.col .bar { width: 100%; max-width: 38px; background: var(--bar); border-radius: 6px 6px 2px 2px; }
+.col.today .bar { background: var(--accent); }
+.col.zero .bar { background: var(--line); }
+.axis { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
+.axis span { text-align: center; font-size: .72rem; color: var(--muted); white-space: nowrap; }
+.axis span.today { color: var(--fg); font-weight: 600; }
+.sbar { display: grid; grid-template-columns: minmax(70px, 110px) minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 0; font-size: .9rem; }
+.sbar .nm { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sbar .nm span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sbar .tr { height: 10px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.sbar .fl { height: 100%; border-radius: 6px; }
+.sbar .mn { color: var(--muted); font-size: .82rem; font-variant-numeric: tabular-nums; }
+
+/* study */
+.subs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.subc { display: inline-flex; align-items: center; gap: 8px; padding: 4px 6px 4px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.subc .icon-btn { width: 28px; height: 28px; }
+.lform { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.lform .s3 { grid-column: span 3; } .lform .s2 { grid-column: span 2; } .lform .s6 { grid-column: span 6; }
+@media (max-width: 520px) { .lform .s3, .lform .d { grid-column: span 6; } .lform .f { grid-column: span 3; } }
+.lday h3 { font-size: .95rem; margin: 20px 0 4px; color: var(--muted); font-weight: 600; }
+.lday h3.today { color: var(--accent); }
+.lesson { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.l-time { min-width: 108px; font-size: .88rem; font-variant-numeric: tabular-nums; color: var(--muted); }
+.l-body { flex: 1; min-width: 0; }
+.l-sub { display: flex; align-items: center; gap: 8px; font-weight: 600; overflow-wrap: anywhere; }
+.l-center { font-size: .85rem; color: var(--muted); overflow-wrap: anywhere; }
+
+/* worship */
+.wl { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.wl h3 { font-family: var(--display); font-weight: 500; font-size: 1.2rem; margin: 0; }
+.portion { font-family: var(--display); font-size: 1.9rem; margin: 10px 0 2px; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.btns .btn { flex: 1 1 140px; }
+.opt { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+.opt input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+.set-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+details.cat { border-bottom: 1px solid var(--line); }
+details.cat summary { cursor: pointer; padding: 14px 0; display: flex; align-items: center; gap: 10px; font-weight: 600; list-style: none; }
+details.cat summary::-webkit-details-marker { display: none; }
+details.cat summary .sp { flex: 1; }
+.dh { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-top: 1px solid var(--line); }
+.dh .tx { flex: 1; min-width: 0; overflow-wrap: anywhere; white-space: pre-line; font-size: 1.08rem; line-height: 2.05; }
+#adkSearch { margin: 4px 0 8px; }
+.chap-body { padding-bottom: 6px; }
+.cat summary .pill { flex: none; }
+.dh .nt { font-size: .8rem; color: var(--muted); }
+.cnt { flex: none; min-width: 64px; height: 44px; border-radius: 12px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font-family: var(--mono); cursor: pointer; direction: ltr; }
+.dh.full .cnt { background: var(--ok); border-color: var(--ok); color: var(--on-ok); }
+.dh.full .tx { color: var(--muted); }
+.cat-foot { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; padding: 12px 0 16px; }
+.cat-foot .fld { flex: 1 1 160px; }
+.cat-foot .fld.n { flex: 0 0 80px; }
+
+/* in-app Quran reader */
+.reader { position: fixed; inset: 0; z-index: 30; background: var(--bg); display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); }
+.rd-head, .rd-foot { display: flex; align-items: center; gap: 8px; background: var(--surface); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.rd-head { padding-block: 10px; border-bottom: 1px solid var(--line); }
+.rd-head h2 { flex: 1; margin: 0; font-family: var(--display); font-weight: 500; font-size: 1.15rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fs-btn { border: 1px solid var(--line); background: transparent; border-radius: 10px; min-width: 40px; height: 36px; cursor: pointer; font-weight: 600; }
+.rd-foot { padding-top: 12px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); min-height: 64px; }
+.rd-foot .btn { flex: none; }
+.rd-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.rd-body { max-width: 760px; margin: 0 auto; padding: 20px max(16px, env(safe-area-inset-left, 0px)) 28px max(16px, env(safe-area-inset-right, 0px)); }
+.qtext { font-family: "Amiri Quran", "Amiri", "Scheherazade New", "Noto Naskh Arabic", serif; font-size: var(--qfs, 28px); line-height: 2.3; text-align: justify; text-justify: inter-word; }
+.qp { margin: 0 0 .4em; }
+.qn { color: var(--accent); font-size: .8em; white-space: nowrap; }
+.pg-mark { display: flex; align-items: center; gap: 10px; margin: 18px 0 8px; font-family: var(--body); font-size: .75rem; line-height: 1.4; color: var(--muted); }
+.pg-mark::before, .pg-mark::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.sura-h { font-family: var(--display); font-size: 1.5rem; line-height: 1.5; text-align: center; margin: 22px 0 6px; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.bism { text-align: center; margin-bottom: .2em; }
+.credit a { color: var(--accent); }
+
+.bk { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.bk .btn { margin-top: 0; }
+.quote { display: block; width: 100%; margin: 2px 0 12px; padding: 10px 14px; border: 0; border-inline-start: 3px solid var(--gold); border-radius: 0 8px 8px 0; background: var(--surface-2); color: var(--fg); font: inherit; font-size: .98rem; line-height: 1.7; text-align: start; cursor: pointer; }
+.quote:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.subpick { margin: 4px 0 12px; }
+.sp-h { font-size: .85rem; color: var(--muted); margin-bottom: 6px; text-align: center; }
+.subpick .chips { justify-content: center; margin-top: 0; }
+.subpick .chip { display: inline-flex; align-items: center; gap: 8px; }
+.chip.sel { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.chip:disabled { opacity: .55; cursor: default; }
+.subpick .note-s { text-align: center; }
+.subtime { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.subtime h3 { margin: 0 0 6px; }
+.srow { padding: 8px 0; }
+.srow-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: .9rem; }
+.srow .nm { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; min-width: 0; }
+.srow.cur .nm { color: var(--accent); font-weight: 600; }
+.srow .mn { color: var(--muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
+.srow .tr { height: 8px; background: var(--surface-2); border-radius: 6px; overflow: hidden; margin-top: 6px; }
+.srow .fl { height: 100%; border-radius: 6px; }
+.foot { margin-top: 36px; font-size: .82rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot.cloud { background: var(--ok); }
+/* splash, sign-in gate, owner board, privacy */
+:root { --sp-a: #1B2F8F; --sp-b: #0E7C74; --sp-fg: #F4F7F5; --sp-gold: #E8C468; }
+.splash { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; text-align: center; cursor: pointer;
+  background: linear-gradient(160deg, var(--sp-a) 0%, #1A5AA8 48%, var(--sp-b) 100%); color: var(--sp-fg);
+  padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(16px, env(safe-area-inset-left, 0px));
+  animation: spOut .7s ease 2.6s forwards; }
+.sp-in { display: flex; flex-direction: column; align-items: center; gap: 6px; animation: spIn 1s ease both; }
+.sp-mark { font-family: var(--display); font-weight: 600; font-size: clamp(4rem, 22vw, 6.5rem); line-height: 1.1; letter-spacing: 0; }
+.sp-line { width: 56px; height: 3px; border-radius: 2px; background: var(--sp-gold); margin: 14px 0 16px; }
+.sp-tag { font-size: 1.15rem; letter-spacing: 0; color: var(--sp-gold); margin-top: 2px; }
+.sp-sub { font-size: 1rem; opacity: .85; }
+.sp-name { font-family: var(--body); font-weight: 600; font-size: clamp(1.5rem, 7vw, 2.1rem); letter-spacing: .02em; direction: ltr; }
+@keyframes spIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes spOut { to { opacity: 0; visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) { .splash { animation-delay: 1.4s; } .sp-in { animation: none; } }
+.veil { max-width: 460px; margin: 12vh auto 0; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.veil h2 { font-family: var(--display); font-weight: 500; font-size: 1.6rem; margin: 0; }
+.veil p { margin: 0; color: var(--muted); }
+.otiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px 24px; margin-bottom: 8px; }
+.otiles .stat b { font-size: 2rem; }
+.vrow { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.vrow .v-body { flex: 1; min-width: 0; }
+.vrow .v-name { font-weight: 600; overflow-wrap: anywhere; }
+.vrow .v-meta { font-size: .82rem; color: var(--muted); }
+.vrow .v-n { flex: none; font-family: var(--mono); font-size: .9rem; color: var(--accent); direction: ltr; }
+.vrow .btn { padding: 6px 12px; font-size: .8rem; font-weight: 500; }
+details.priv { margin-top: 14px; font-size: .88rem; color: var(--muted); }
+details.priv summary { cursor: pointer; padding: 6px 0; }
+details.priv p { margin: 6px 0; }
+details.priv .btn { margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) { .tick { transition: none; } }
+</style>
+
+<div class="splash" id="splash" lang="ar" dir="rtl" role="presentation">
+  <div class="sp-in">
+    <div class="sp-mark" lang="en">DMA</div>
+    <div class="sp-tag">وقتك بركة</div>
+    <div class="sp-line"></div>
+    <div class="sp-sub">صنع بواسطة</div>
+    <div class="sp-name" lang="en">Dr.Malak Ashraf</div>
+  </div>
+</div>
+
+<div class="page veil-wrap" lang="ar" dir="rtl">
+  <div id="appRoot">
+  <header class="top">
+    <div class="brand">
+      <h1 lang="en">DMA</h1>
+      <p id="today"></p>
+    </div>
+    <div class="stats" id="stats"></div>
+  </header>
+  <p class="next" id="nextLesson" hidden></p>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="أقسام التطبيق">
+    <button type="button" role="tab" data-v="today" aria-selected="true">اليوم</button>
+    <button type="button" role="tab" data-v="study" aria-selected="false">الدراسة</button>
+    <button type="button" role="tab" data-v="wird" aria-selected="false">الورد والأذكار</button>
+  </nav>
+
+  <!-- ========== اليوم ========== -->
+  <main class="grid" id="v-today">
+    <section class="card" id="timer" data-mode="focus" aria-label="مؤقت التركيز">
+      <div class="modes" id="modes" role="group" aria-label="نوع الجلسة">
+        <button type="button" data-m="focus">تركيز</button>
+        <button type="button" data-m="short">راحة قصيرة</button>
+        <button type="button" data-m="long">راحة طويلة</button>
+      </div>
+      <div class="dial">
+        <svg viewBox="0 0 300 300" aria-hidden="true" id="ticks"></svg>
+        <div class="dial-center" role="timer">
+          <div class="dial-label" id="dialLabel">وقت التركيز</div>
+          <div class="dial-time" id="dialTime">25:00</div>
+          <div class="dial-task" id="dialTask"></div>
+        </div>
+      </div>
+      <button type="button" class="quote" id="quote" aria-live="off" title="اضغطي لعبارة تانية"></button>
+      <div class="lens" id="lens" role="group" aria-label="مدة جلسة التركيز"></div>
+      <div class="subpick" id="subPick"></div>
+      <div class="gate" id="gate" hidden></div>
+      <div class="controls">
+        <button type="button" class="btn primary" id="go">ابدأ</button>
+        <button type="button" class="btn ghost" id="reset">إعادة</button>
+        <button type="button" class="btn ghost" id="skip">تخطي</button>
+      </div>
+      <p class="note" id="note" role="status" aria-live="polite"></p>
+      <div class="subtime" id="subTime"></div>
+    </section>
+
+    <div class="stack">
+      <section aria-label="مهام اليوم">
+        <div class="sec-head"><h2>مهام اليوم</h2><small id="taskCount"></small></div>
+        <form class="add" id="addForm" autocomplete="off">
+          <input class="in" id="taskInput" type="text" dir="auto" maxlength="140" placeholder="أضف مهمة جديدة" aria-label="مهمة جديدة" disabled>
+          <select class="in" id="taskSub" aria-label="المادة" hidden></select>
+          <button type="submit" class="btn" id="addBtn" disabled>إضافة</button>
+        </form>
+        <div id="list"></div>
+        <div id="doneWrap"></div>
+      </section>
+
+      <section aria-label="التركيز خلال الأسبوع">
+        <div class="sec-head"><h2>تركيزك آخر 7 أيام</h2><small id="weekTotal"></small></div>
+        <div class="plot" id="plot"></div>
+        <div class="axis" id="axis"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ========== الدراسة ========== -->
+  <main class="cols" id="v-study" hidden>
+    <section aria-label="موادي">
+      <div class="sec-head"><h2>موادي</h2><small id="subCount"></small></div>
+      <form class="add" id="subForm" autocomplete="off">
+        <input class="in" id="subInput" type="text" dir="auto" maxlength="40" placeholder="اسم المادة، مثل الفيزياء" aria-label="اسم المادة" disabled>
+        <button type="submit" class="btn" id="subBtn" disabled>إضافة</button>
+      </form>
+      <div class="subs" id="subList"></div>
+      <h3 class="sub-h">تركيزك لكل مادة آخر 7 أيام</h3>
+      <div id="subBars"></div>
+    </section>
+
+    <section aria-label="مواعيد السناتر">
+      <div class="sec-head"><h2>مواعيد السناتر</h2><small id="lessonCount"></small></div>
+      <form class="lform" id="lessonForm" autocomplete="off">
+        <div class="fld s3"><label for="lSub">المادة</label><input class="in" id="lSub" type="text" dir="auto" maxlength="60" list="subNames" placeholder="الفيزياء"></div>
+        <div class="fld s3"><label for="lCenter">السنتر</label><input class="in" id="lCenter" type="text" dir="auto" maxlength="60" placeholder="اسم السنتر"></div>
+        <div class="fld s2 d"><label for="lDay">اليوم</label><select class="in" id="lDay"></select></div>
+        <div class="fld s2 f"><label for="lFrom">من</label><input class="in" id="lFrom" type="time"></div>
+        <div class="fld s2 f"><label for="lTo">إلى</label><input class="in" id="lTo" type="time"></div>
+        <div class="s6"><button type="submit" class="btn" id="lBtn" style="width:100%" disabled>إضافة الموعد</button></div>
+      </form>
+      <datalist id="subNames"></datalist>
+      <p class="msg" id="lessonMsg" role="status"></p>
+      <div id="lessonList"></div>
+    </section>
+  </main>
+
+  <!-- ========== الورد والأذكار ========== -->
+  <main class="cols" id="v-wird" hidden>
+    <div class="stack">
+      <section class="card" aria-label="ورد القرآن اليومي" id="wirdCard"></section>
+      <section class="card" aria-label="سورة الكهف" id="kahfCard"></section>
+      <section aria-label="إعدادات الورد">
+        <div class="sec-head"><h2>إعدادات الورد</h2></div>
+        <div id="settings"></div>
+        <p class="note-s credit">نص القرآن الكريم من <a href="https://tanzil.net" target="_blank" rel="noopener">مشروع تنزيل (Tanzil)</a>، ترخيص CC BY 3.0.</p>
+      </section>
+    </div>
+    <section aria-label="الأذكار">
+      <div class="sec-head"><h2>الأذكار</h2><small id="adkSum"></small></div>
+      <div id="adhkar"></div>
+      <p class="note-s">الأذكار من كتاب «حصن المسلم» لسعيد بن علي بن وهف القحطاني، من ملف <a href="https://github.com/rn0x/adhkar-json" target="_blank" rel="noopener">rn0x/adhkar-json</a> المتاح للاستخدام الحر. تقدري تضيفي أي ذكر بنصك في أذكار الصباح والمساء والصلاة والنوم والاستيقاظ.</p>
+    </section>
+  </main>
+
+  <!-- ========== لوحة المالكة ========== -->
+  <main id="v-owner" hidden>
+    <div class="sec-head"><h2>لوحة المالكة</h2><small id="ownNote"></small></div>
+    <div class="otiles" id="oTiles"></div>
+    <h3 class="sub-h">عدد الأشخاص كل يوم، آخر 14 يوم</h3>
+    <div class="plot" id="oPlot" style="grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 4px"></div>
+    <div class="axis" id="oAxis" style="grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 4px"></div>
+    <h3 class="sub-h">المسجّلون</h3>
+    <div id="oList"></div>
+    <p class="note-s">بتشوفي الاسم وأول وآخر مرة دخول وعدد المرات بس. مذاكرة الناس ومهامهم وورد القرآن والأذكار محفوظة في مساحة كل شخص الخاصة ومحدش يقدر يشوفها، وانتِ كمان.</p>
+  </main>
+
+  <footer class="foot"><span class="dot" id="dot"></span><span id="storeNote">بنحمّل بياناتك…</span></footer>
+  <details class="priv" id="privacy"></details>
+  </div>
+
+  <div class="reader" id="reader" hidden role="dialog" aria-modal="true" aria-labelledby="rdTitle">
+    <div class="rd-head">
+      <button type="button" class="icon-btn" id="rdClose" aria-label="إغلاق"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <h2 id="rdTitle"></h2>
+      <button type="button" class="fs-btn" id="rdSmaller" aria-label="تصغير الخط">أ−</button>
+      <button type="button" class="fs-btn" id="rdBigger" aria-label="تكبير الخط">أ+</button>
+    </div>
+    <div class="rd-scroll" id="rdScroll">
+      <div class="rd-body">
+        <div class="qtext" id="rdText" lang="ar" dir="rtl"></div>
+        <div id="rdEnd" aria-hidden="true"></div>
+        <p class="note-s credit">نص القرآن الكريم من <a href="https://tanzil.net" target="_blank" rel="noopener">مشروع تنزيل (Tanzil)</a>، ترخيص CC BY 3.0.</p>
+      </div>
+    </div>
+    <div class="rd-foot" id="rdFoot"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  var pad = function (n) { return String(n).padStart(2, "0"); };
+  var uid = function () { return Math.random().toString(36).slice(2, 9) + Date.now().toString(36); };
+  /* عدّاد زوّار من غير أسماء (اختياري): اكتبي هنا كود موقعك من goatcounter.com، مثال: "dma" */
+  var GOATCOUNTER_CODE = "";
+  if (GOATCOUNTER_CODE && /^[a-z0-9-]+$/.test(GOATCOUNTER_CODE) && location.protocol.indexOf("http") === 0) {
+    var gc = document.createElement("script");
+    gc.async = true; gc.src = "https://gc.zgo.at/count.js";
+    gc.setAttribute("data-goatcounter", "https://" + GOATCOUNTER_CODE + ".goatcounter.com/count");
+    document.head.appendChild(gc);
+  }
+  var LS_KEY = "yawmi.v2";
+  var dayStartH = 4;
+  /* A "day" runs from dayStartH to dayStartH the next morning, so late-night study counts for the day you started. */
+  function shifted(ts) { return new Date((ts || Date.now()) - dayStartH * 36e5); }
+  function dayKey(ts) { var d = shifted(ts); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function dow(ts) { return shifted(ts).getDay(); }
+
+  var DAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+  var DAY_ABBR = ["أحد", "اثنين", "ثلاث", "أربع", "خميس", "جمعة", "سبت"];
+  var WEEK_ORDER = [6, 0, 1, 2, 3, 4, 5];
+  var MODE_LABEL = { focus: "وقت التركيز", short: "استراحة قصيرة", long: "استراحة طويلة" };
+  var SUGGESTIONS = ["مراجعة الإيميلات", "مذاكرة", "تمرين رياضي", "تخطيط الأسبوع"];
+  var QURAN_PAGE = function (n) { return "https://quran.com/page/" + n; };
+  var KAHF_URL = "https://quran.com/18";
+
+  /* Adhkar: full text of Hisn al-Muslim, loaded from adhkar.json beside the page (132 chapters). */
+  var CORE = [
+    { key: "morning", name: "أذكار الصباح", ch: 1, hide: [23] },
+    { key: "evening", name: "أذكار المساء", ch: 1, hide: [19, 20, 21] },
+    { key: "prayer", name: "أذكار بعد الصلاة", ch: 27, hide: [] },
+    { key: "sleep", name: "أذكار النوم", ch: 2, hide: [] },
+    { key: "wake", name: "أذكار الاستيقاظ", ch: 3, hide: [] }
+  ];
+  var CAT_ORDER = CORE.map(function (c) { return c.key; });
+  var CORE_BY = {}; CORE.forEach(function (c) { CORE_BY[c.key] = c; });
+  var COUNT_FIX = { "27:4": 1 };
+  var AD = null, adLoading = null, adByCh = {};
+
+  /* ---------- tiny DOM helper (user text is only ever set via textContent) ---------- */
+  function el(tag, props) {
+    var node = document.createElement(tag);
+    props = props || {};
+    Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (k.slice(0, 2) === "on") node.addEventListener(k.slice(2), v);
+      else node.setAttribute(k, v);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var kid = arguments[i];
+      if (kid == null) continue;
+      node.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+    }
+    return node;
+  }
+  var ICONS = {
+    check: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    target: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/></svg>',
+    x: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+  };
+  function icon(name) { var s = document.createElement("span"); s.style.display = "grid"; s.innerHTML = ICONS[name]; return s; }
+  function fmt12(hhmm) { var p = String(hhmm).split(":"), h = +p[0], s = h >= 12 ? "م" : "ص"; h = h % 12 || 12; return h + ":" + p[1] + " " + s; }
+  function fmtMin(m) { var h = Math.floor(m / 60), r = m % 60; return (h ? h + " س " : "") + (r || !h ? r + " د" : ""); }
+  /* two-tap confirm without dialogs */
+  function armed(btn, label, action) {
+    var orig = label, t = null, on = false;
+    btn.addEventListener("click", function () {
+      if (!on) { on = true; btn.textContent = "اضغط مرة تانية للتأكيد"; t = setTimeout(function () { on = false; btn.textContent = orig; }, 4000); return; }
+      clearTimeout(t); on = false; btn.textContent = orig; action();
+    });
+  }
+
+  /* ---------- state ---------- */
+  function fresh() {
+    return { v: 2, tasks: [], log: {}, focusLen: 25, subjects: [], lessons: [],
+      wird: { size: 2, pos: 1, khatm: 0, doneOn: "", from: 0, to: 0 }, kahf: "",
+      gate: { w: true, k: true, am: false, pm: false }, dayStart: 4,
+      adk: { d: "", prog: {}, done: {}, custom: {} }, timer: null, lastSid: "", rfs: 28, subSel: "", vis: { first: 0, last: 0, n: 0, days: [], mirrored: false } };
+  }
+  function str(v, n) { return String(v == null ? "" : v).slice(0, n); }
+  function normalize(d) {
+    var s = fresh();
+    if (d && typeof d === "object") {
+      if ([0, 3, 4, 5].indexOf(+d.dayStart) >= 0) s.dayStart = +d.dayStart;
+      dayStartH = s.dayStart;
+      if (Array.isArray(d.subjects)) s.subjects = d.subjects.filter(function (x) { return x && typeof x.n === "string" && x.n; }).slice(0, 40).map(function (x) { return { id: str(x.id || uid(), 30), n: str(x.n, 40), c: (+x.c || 0) % 6, tot: Math.max(0, +x.tot || 0) }; });
+      if (Array.isArray(d.tasks)) s.tasks = d.tasks.filter(function (t) { return t && typeof t.t === "string"; }).slice(0, 200).map(function (t) {
+        return { id: str(t.id || uid(), 30), t: str(t.t, 140), done: !!t.done, doneOn: str(t.doneOn, 12), sess: +t.sess || 0, mins: +t.mins || 0, sid: str(t.sid, 30) };
+      });
+      if (Array.isArray(d.lessons)) s.lessons = d.lessons.filter(function (l) { return l && l.sub && /^\d{2}:\d{2}$/.test(l.from) && /^\d{2}:\d{2}$/.test(l.to) && l.day >= 0 && l.day <= 6; }).slice(0, 80).map(function (l) {
+        return { id: str(l.id || uid(), 30), sub: str(l.sub, 60), center: str(l.center, 60), day: +l.day, from: l.from, to: l.to };
+      });
+      if (d.log && typeof d.log === "object") Object.keys(d.log).forEach(function (k) {
+        var v = d.log[k];
+        if (/^\d{4}-\d{2}-\d{2}$/.test(k) && v) {
+          var by = {};
+          if (v.by && typeof v.by === "object") Object.keys(v.by).forEach(function (b) { by[b] = +v.by[b] || 0; });
+          s.log[k] = { m: +v.m || 0, s: +v.s || 0, by: by };
+        }
+      });
+      if ([15, 25, 50].indexOf(+d.focusLen) >= 0) s.focusLen = +d.focusLen;
+      if (d.wird && typeof d.wird === "object") {
+        var w = d.wird;
+        s.wird = { size: [1, 2, 3, 4, 5, 10, 20].indexOf(+w.size) >= 0 ? +w.size : 2, pos: Math.min(604, Math.max(1, +w.pos || 1)), khatm: +w.khatm || 0, doneOn: str(w.doneOn, 12), from: +w.from || 0, to: +w.to || 0 };
+      }
+      s.kahf = str(d.kahf, 12);
+      s.rfs = Math.min(44, Math.max(20, Math.round(+d.rfs || 28)));
+      if (d.gate && typeof d.gate === "object") s.gate = { w: d.gate.w !== false, k: d.gate.k !== false, am: !!d.gate.am, pm: !!d.gate.pm };
+      if (d.adk && typeof d.adk === "object") {
+        var a = d.adk;
+        s.adk.d = str(a.d, 12);
+        if (a.prog && typeof a.prog === "object") Object.keys(a.prog).forEach(function (c) { s.adk.prog[c] = {}; Object.keys(a.prog[c] || {}).forEach(function (i) { s.adk.prog[c][i] = +a.prog[c][i] || 0; }); });
+        if (a.done && typeof a.done === "object") Object.keys(a.done).forEach(function (c) { s.adk.done[c] = str(a.done[c], 12); });
+        if (a.custom && typeof a.custom === "object") Object.keys(a.custom).forEach(function (c) {
+          if (Array.isArray(a.custom[c])) s.adk.custom[c] = a.custom[c].filter(function (x) { return x && x.t; }).slice(0, 40).map(function (x) { return { id: str(x.id || uid(), 30), t: str(x.t, 200), n: Math.min(1000, Math.max(1, +x.n || 1)) }; });
+        });
+      }
+      var t = d.timer;
+      if (t && typeof t === "object" && MODE_LABEL[t.mode] && +t.total >= 60 && +t.total <= 7200) {
+        s.timer = { mode: t.mode, total: +t.total, left: Math.max(0, +t.left || 0), endsAt: +t.endsAt || 0, running: !!t.running, sid: str(t.sid, 30), taskId: str(t.taskId, 30), sub: str(t.sub, 30) };
+      }
+      s.lastSid = str(d.lastSid, 30);
+      s.subSel = str(d.subSel, 30);
+      if (d.vis && typeof d.vis === "object") {
+        s.vis = { first: +d.vis.first || 0, last: +d.vis.last || 0, n: Math.max(0, Math.round(+d.vis.n || 0)), mirrored: !!d.vis.mirrored,
+          days: Array.isArray(d.vis.days) ? d.vis.days.filter(function (x) { return /^\d{4}-\d{2}-\d{2}$/.test(x); }).slice(-60) : [] };
+      }
+    }
+    var today = dayKey();
+    s.tasks = s.tasks.filter(function (t) { return !t.done || t.doneOn === today; });
+    var cutoff = dayKey(Date.now() - 35 * 864e5);
+    Object.keys(s.log).forEach(function (k) { if (k < cutoff) delete s.log[k]; });
+    if (s.adk.d !== today) { s.adk.d = today; s.adk.prog = {}; }
+    return s;
+  }
+  function canon(s) {
+    return JSON.stringify([s.tasks, s.subjects, s.lessons, Object.keys(s.log).sort().map(function (k) { return [k, s.log[k]]; }), s.wird, s.kahf, s.gate, s.dayStart, s.adk, s.focusLen]);
+  }
+  var S = fresh();
+  var loaded = false;
+
+  /* ---------- storage: private db document when signed in, localStorage otherwise ---------- */
+  var store = { mode: "local", ref: null, db: null, user: null, uid: "" };
+  var ACC = { signedOut: false, owner: false, visitOk: null };
+  var sealed = false;
+  async function initStore() {
+    try {
+      if (!(window.claude && window.claude.use)) return;
+      var res = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+      var db = res[0], user = res[1];
+      if (sealed || !user) return;
+      var id = await user.id();
+      if (sealed) return;
+      if (!id) { ACC.signedOut = true; return; }
+      store.user = user; store.uid = id;
+      try { ACC.owner = !!(await user.isOwner()); } catch (e) { ACC.owner = false; }
+      if (sealed || !db) return;
+      store.db = db;
+      store.ref = db.doc("data/users/" + id + "/app");
+      store.mode = "cloud";
+    } catch (e) { /* stay local */ }
+  }
+  function readLocal() { try { return JSON.parse(localStorage.getItem(LS_KEY) || localStorage.getItem("yawmi.v1") || "null"); } catch (e) { return null; } }
+  function writeLocal(p) { try { localStorage.setItem(LS_KEY, JSON.stringify(p)); } catch (e) { /* ignore */ } }
+  async function load() {
+    var data = null;
+    if (store.mode === "cloud") {
+      try {
+        var snap = await store.ref.get();
+        data = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : readLocal();
+      } catch (e) { store.mode = "local"; store.ref = null; }
+    }
+    if (store.mode === "local") data = readLocal();
+    S = normalize(data);
+  }
+  var saving = false, dirty = false, saveTimer = null;
+  function save() { dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(flush, 400); }
+  async function flush() {
+    if (saving) { saveTimer = setTimeout(flush, 200); return; }
+    if (!dirty) return;
+    dirty = false; saving = true;
+    var payload = JSON.parse(JSON.stringify(S));
+    writeLocal(payload);
+    if (store.mode === "cloud") {
+      try { await store.ref.set(payload); }
+      catch (e) { store.mode = "local"; store.ref = null; renderFoot(); }
+    }
+    saving = false;
+    if (dirty) save();
+  }
+  function subscribe() {
+    if (store.mode !== "cloud") return;
+    try {
+      store.ref.onSnapshot(function (snap) {
+        if (snap.metadata.hasPendingWrites || saving || dirty || !snap.exists) return;
+        var incoming = normalize(JSON.parse(JSON.stringify(snap.data())));
+        if (canon(incoming) === canon(S)) return;
+        incoming.timer = snapT(); incoming.lastSid = S.lastSid || incoming.lastSid;
+        S = incoming;
+        if (T.mode === "focus" && !T.running && T.left === T.total) { T.total = S.focusLen * 60; T.left = T.total; T.lit = -1; }
+        renderAll();
+        renderAdhkar(true);
+      }, function () { /* ignore */ });
+    } catch (e) { /* ignore */ }
+  }
+
+  /* ---------- gate: what must be done before the study timer opens ---------- */
+  function gateItems() {
+    var tk = dayKey(), items = [];
+    if (S.gate.w) items.push({ label: "ورد القرآن اليومي", ok: S.wird.doneOn === tk });
+    if (S.gate.k && dow() === 5) items.push({ label: "سورة الكهف (يوم الجمعة)", ok: S.kahf === tk });
+    if (S.gate.am) items.push({ label: "أذكار الصباح", ok: S.adk.done.morning === tk });
+    if (S.gate.pm) items.push({ label: "أذكار المساء", ok: S.adk.done.evening === tk });
+    return items;
+  }
+  function locked() { return gateItems().some(function (i) { return !i.ok; }); }
+
+  /* ---------- timer ---------- */
+  var T = { mode: "focus", total: 1500, left: 1500, endsAt: 0, running: false, iv: null, taskId: null, lit: -1, sid: "", sub: "" };
+  var ac = null, wl = null;
+  function modeSec(m) { return m === "focus" ? S.focusLen * 60 : m === "short" ? 300 : 900; }
+  function todayLog() { return S.log[dayKey()] || { m: 0, s: 0, by: {} }; }
+  function nextBreak() { var s = todayLog().s; return s > 0 && s % 4 === 0 ? "long" : "short"; }
+  function currentTask() { return S.tasks.filter(function (t) { return t.id === T.taskId && !t.done; })[0] || null; }
+  function effSub() {
+    if (S.subSel === "none") return "";
+    if (S.subSel && subjectById(S.subSel)) return S.subSel;
+    var tk = currentTask();
+    return tk && tk.sid && subjectById(tk.sid) ? tk.sid : "";
+  }
+  function subMins(sid, days) {
+    var tot = 0;
+    for (var i = 0; i < days; i++) tot += ((S.log[dayKey(Date.now() - i * 864e5)] || {}).by || {})[sid] || 0;
+    return tot;
+  }
+  function allMins(days) {
+    var tot = 0;
+    for (var i = 0; i < days; i++) tot += (S.log[dayKey(Date.now() - i * 864e5)] || { m: 0 }).m;
+    return tot;
+  }
+  function snapT() {
+    if (!T.running && T.left >= T.total) return null;
+    return { mode: T.mode, total: T.total, left: T.left, endsAt: T.running ? T.endsAt : 0, running: T.running, sid: T.sid, taskId: T.taskId || "", sub: T.sub || "" };
+  }
+  function persistTimer() { S.timer = snapT(); save(); }
+
+  function unlockAudio() { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.resume) ac.resume(); } catch (e) { /* ignore */ } }
+  function beep() {
+    try {
+      unlockAudio();
+      [0, 0.28, 0.56].forEach(function (d, i) {
+        var o = ac.createOscillator(), g = ac.createGain();
+        o.type = "sine"; o.frequency.value = i === 2 ? 988 : 784;
+        o.connect(g); g.connect(ac.destination);
+        var t = ac.currentTime + d;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+        o.start(t); o.stop(t + 0.25);
+      });
+    } catch (e) { /* ignore */ }
+    try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) { /* ignore */ }
+  }
+  async function lock() { try { if (navigator.wakeLock && !wl) { wl = await navigator.wakeLock.request("screen"); wl.addEventListener("release", function () { wl = null; }); } } catch (e) { wl = null; } }
+  function unlock() { try { if (wl) wl.release(); } catch (e) { /* ignore */ } wl = null; }
+  function catchUp() { if (T.running) { lock(); tick(); } }
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) catchUp(); });
+  window.addEventListener("pageshow", catchUp);
+
+  function startTimer() {
+    if (T.mode === "focus" && !T.running && T.left === T.total && locked()) { renderTimer(); return; }
+    unlockAudio();
+    if (!T.sid || T.left === T.total) { T.sid = uid(); T.sub = T.mode === "focus" ? effSub() : ""; }
+    T.endsAt = Date.now() + T.left * 1000;
+    T.running = true;
+    clearInterval(T.iv);
+    T.iv = setInterval(tick, 250);
+    lock();
+    setNote("");
+    persistTimer();
+    renderTimer();
+  }
+  function pauseTimer() {
+    T.left = Math.max(0, Math.ceil((T.endsAt - Date.now()) / 1000));
+    stopTimer();
+    persistTimer();
+    renderTimer();
+  }
+  function stopTimer() { T.running = false; clearInterval(T.iv); T.iv = null; unlock(); }
+  function tick() {
+    var left = Math.ceil((T.endsAt - Date.now()) / 1000);
+    if (left <= 0) { T.left = 0; complete(false); return; }
+    if (left !== T.left) { T.left = left; paintTime(); }
+  }
+  function setMode(m) {
+    stopTimer();
+    T.mode = m; T.total = modeSec(m); T.left = T.total; T.lit = -1; T.sid = ""; T.sub = "";
+    persistTimer();
+    renderTimer();
+  }
+  function complete(away) {
+    var endedAt = T.endsAt && T.endsAt < Date.now() ? T.endsAt : Date.now();
+    stopTimer();
+    var wasFocus = T.mode === "focus", loggedSub = "";
+    if (wasFocus && S.lastSid !== T.sid) {
+      var k = dayKey(endedAt), mins = Math.round(T.total / 60);
+      var cur = S.log[k] || { m: 0, s: 0, by: {} };
+      var by = cur.by || {};
+      var tk = currentTask(), sub = T.sub && subjectById(T.sub) ? T.sub : "";
+      if (sub) { by[sub] = (by[sub] || 0) + mins; loggedSub = subjectById(sub).n; subjectById(sub).tot = (subjectById(sub).tot || 0) + mins; }
+      S.log[k] = { m: cur.m + mins, s: cur.s + 1, by: by };
+      if (tk) { tk.sess += 1; tk.mins += mins; }
+      S.lastSid = T.sid;
+    }
+    beep();
+    var next = wasFocus ? nextBreak() : "focus";
+    setMode(next);
+    setNote(wasFocus
+      ? (away ? "الجلسة خلصت وانتي بره التطبيق وتم تسجيلها" : "خلصت جلسة تركيز") + (loggedSub ? " في " + loggedSub : "") + ". دلوقتي " + (next === "long" ? 15 : 5) + " دقايق راحة."
+      : "الراحة خلصت. زر «ابدأ» جاهز للجلسة الجاية.");
+    renderAll();
+  }
+  function restoreTimer() {
+    var t = S.timer;
+    if (!t) return;
+    T.mode = t.mode; T.total = t.total; T.sid = t.sid || uid(); T.sub = t.sub || ""; T.lit = -1;
+    if (t.taskId) T.taskId = t.taskId;
+    if (t.running) {
+      var rem = Math.ceil((t.endsAt - Date.now()) / 1000);
+      T.endsAt = t.endsAt;
+      if (rem > 0) {
+        T.left = rem; T.running = true; clearInterval(T.iv); T.iv = setInterval(tick, 250); lock();
+        setNote("المؤقت كان شغال وكملنا من حيث وصل.");
+      } else { T.left = 0; complete(true); }
+    } else {
+      T.left = Math.min(t.total, Math.max(1, t.left || t.total));
+    }
+  }
+
+  /* ---------- tasks / subjects / lessons ---------- */
+  function subjectById(id) { return S.subjects.filter(function (x) { return x.id === id; })[0] || null; }
+  function subjectByName(n) { n = String(n || "").trim(); return S.subjects.filter(function (x) { return x.n === n; })[0] || null; }
+  function addTask(title, sid) {
+    title = String(title || "").trim().slice(0, 140);
+    if (!title || !loaded) return;
+    var t = { id: uid(), t: title, done: false, doneOn: "", sess: 0, mins: 0, sid: sid || "" };
+    S.tasks.push(t);
+    if (!currentTask()) T.taskId = t.id;
+    save(); renderAll();
+  }
+  function nextOpenId() { var nx = S.tasks.filter(function (x) { return !x.done; })[0]; return nx ? nx.id : null; }
+  function toggleDone(id) {
+    var t = S.tasks.filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    t.done = !t.done;
+    t.doneOn = t.done ? dayKey() : "";
+    if (t.done && T.taskId === id) T.taskId = nextOpenId();
+    if (!t.done && !currentTask()) T.taskId = t.id;
+    save(); renderAll();
+  }
+  function removeTask(id) {
+    S.tasks = S.tasks.filter(function (x) { return x.id !== id; });
+    if (T.taskId === id) T.taskId = nextOpenId();
+    save(); renderAll();
+  }
+  function focusOn(id) {
+    T.taskId = T.taskId === id ? null : id;
+    var t = currentTask();
+    if (t && t.sid && subjectById(t.sid) && !T.running && T.left === T.total) { S.subSel = t.sid; save(); }
+    if (S.timer) persistTimer();
+    renderAll();
+  }
+  function addSubject(name) {
+    name = String(name || "").trim().slice(0, 40);
+    if (!name || !loaded || subjectByName(name)) return;
+    var used = S.subjects.map(function (x) { return x.c; }), c = 0;
+    while (used.indexOf(c) >= 0 && c < 5) c++;
+    S.subjects.push({ id: uid(), n: name, c: c, tot: 0 });
+    save(); renderAll();
+  }
+  function removeSubject(id) {
+    S.subjects = S.subjects.filter(function (x) { return x.id !== id; });
+    S.tasks.forEach(function (t) { if (t.sid === id) t.sid = ""; });
+    save(); renderAll();
+  }
+  function nextLesson() {
+    var now = new Date(), best = null;
+    S.lessons.forEach(function (l) {
+      for (var add = 0; add < 8; add++) {
+        var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + add);
+        if (d.getDay() !== l.day) continue;
+        var f = l.from.split(":"), t = l.to.split(":");
+        var st = new Date(d.getFullYear(), d.getMonth(), d.getDate(), +f[0], +f[1]);
+        var en = new Date(d.getFullYear(), d.getMonth(), d.getDate(), +t[0], +t[1]);
+        if (en < now) continue;
+        if (!best || st < best.st) best = { l: l, st: st, add: add, ongoing: st <= now };
+        break;
+      }
+    });
+    return best;
+  }
+
+  /* ---------- wird ---------- */
+  function portion() {
+    if (S.wird.doneOn === dayKey()) return { from: S.wird.from, to: S.wird.to, done: true };
+    var f = Math.min(604, Math.max(1, S.wird.pos)), t = Math.min(604, f + S.wird.size - 1);
+    return { from: f, to: t, done: false };
+  }
+  function finishWird() {
+    var p = portion();
+    if (p.done) return;
+    S.wird.doneOn = dayKey(); S.wird.from = p.from; S.wird.to = p.to;
+    var nx = p.to + 1;
+    if (nx > 604) { nx = 1; S.wird.khatm += 1; }
+    S.wird.pos = nx;
+    save(); renderAll();
+  }
+  function finishKahf() { S.kahf = dayKey(); save(); renderAll(); }
+
+  /* ---------- rendering ---------- */
+  var timeEl = $("#dialTime"), ticksEl = $("#ticks"), tickEls = [];
+  (function buildTicks() {
+    var NS = "http://www.w3.org/2000/svg";
+    for (var i = 0; i < 60; i++) {
+      var major = i % 5 === 0;
+      var ln = document.createElementNS(NS, "line");
+      ln.setAttribute("x1", "150"); ln.setAttribute("x2", "150");
+      ln.setAttribute("y1", "8"); ln.setAttribute("y2", major ? "30" : "20");
+      ln.setAttribute("transform", "rotate(" + (i * 6) + " 150 150)");
+      ln.setAttribute("class", "tick" + (major ? " major" : ""));
+      ticksEl.appendChild(ln); tickEls.push(ln);
+    }
+  })();
+
+  function paintTime() {
+    timeEl.textContent = pad(Math.floor(T.left / 60)) + ":" + pad(T.left % 60);
+    var lit = Math.round((T.total - T.left) / T.total * 60);
+    if (lit !== T.lit) { tickEls.forEach(function (n, i) { n.classList.toggle("on", i < lit); }); T.lit = lit; }
+  }
+  function setNote(msg) { $("#note").textContent = msg; }
+
+  function renderSubPick(midSession, curId) {
+    var box = $("#subPick"), tm = $("#subTime");
+    box.hidden = T.mode !== "focus";
+    box.replaceChildren();
+    if (!S.subjects.length) {
+      box.append(el("p", { class: "note-s", style: "margin:0 0 6px" }, loaded ? "ضيفي موادك وبعدها تختاري تذاكري إيه من هنا." : ""));
+      if (loaded) box.append(el("div", { class: "chips" }, el("button", { type: "button", class: "chip", onclick: function () { setView("study"); } }, "إضافة المواد")));
+    } else {
+      box.append(el("div", { class: "sp-h" }, midSession ? "بتذاكري دلوقتي" : "هتذاكري إيه؟"));
+      var row = el("div", { class: "chips" });
+      var mk = function (id, sub, label) {
+        var on = id === "none" ? !curId : curId === id;
+        var b = el("button", { type: "button", class: "chip" + (on ? " sel" : ""), "aria-pressed": String(on), onclick: function () { S.subSel = id; save(); renderTimer(); } }, sub ? subDot(sub) : null, label);
+        b.disabled = midSession;
+        return b;
+      };
+      S.subjects.forEach(function (x) { row.append(mk(x.id, x, x.n)); });
+      row.append(mk("none", null, "بدون مادة"));
+      box.append(row);
+    }
+    tm.replaceChildren();
+    if (!S.subjects.length) return;
+    var rows = S.subjects.map(function (x) { return { s: x, d: subMins(x.id, 1), w: subMins(x.id, 7) }; });
+    var wk = allMins(7), dy = allMins(1), mx = 60, ad = 0, aw = 0;
+    rows.forEach(function (r) { if (r.w > mx) mx = r.w; ad += r.d; aw += r.w; });
+    var un = { d: Math.max(0, dy - ad), w: Math.max(0, wk - aw) };
+    tm.append(el("h3", { class: "sub-h" }, "مذاكرتك حسب المادة"));
+    rows.forEach(function (r) {
+      var fl = el("div", { class: "fl c" + r.s.c }); fl.style.width = Math.round(r.w / mx * 100) + "%";
+      tm.append(el("div", { class: "srow" + (curId === r.s.id ? " cur" : "") },
+        el("div", { class: "srow-top" }, el("span", { class: "nm" }, subDot(r.s), r.s.n), el("span", { class: "mn" }, "اليوم " + fmtMin(r.d) + " · الأسبوع " + fmtMin(r.w) + " · الكل " + fmtMin(r.s.tot || 0))),
+        el("div", { class: "tr" }, fl)));
+    });
+    if (un.d || un.w) tm.append(el("div", { class: "srow" }, el("div", { class: "srow-top" }, el("span", { class: "nm" }, "بدون مادة"), el("span", { class: "mn" }, "اليوم " + fmtMin(un.d) + " · الأسبوع " + fmtMin(un.w)))));
+  }
+
+  function renderTimer() {
+    var items = gateItems(), isLocked = T.mode === "focus" && !T.running && T.left === T.total && items.some(function (i) { return !i.ok; });
+    var card = $("#timer");
+    card.setAttribute("data-mode", T.mode);
+    card.classList.toggle("locked", isLocked);
+    document.querySelectorAll("#modes button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.getAttribute("data-m") === T.mode));
+      b.disabled = T.running;
+    });
+    $("#dialLabel").textContent = isLocked ? "المؤقت مقفول" : MODE_LABEL[T.mode];
+    var task = currentTask();
+    var midSession = T.mode === "focus" && (T.running || T.left < T.total);
+    var shownSub = subjectById(midSession ? T.sub : effSub());
+    var parts = [];
+    if (shownSub) parts.push(shownSub.n);
+    if (task) parts.push(task.t);
+    $("#dialTask").textContent = T.mode === "focus" ? (parts.length ? parts.join(" · ") : "بدون مادة أو مهمة") : "راحة للعين وكوباية مياه";
+    renderSubPick(midSession, shownSub ? shownSub.id : "");
+    var lens = $("#lens");
+    lens.hidden = T.mode !== "focus";
+    lens.replaceChildren();
+    [15, 25, 50].forEach(function (n) {
+      var b = el("button", { type: "button", "aria-pressed": String(S.focusLen === n), "aria-label": n + " دقيقة", onclick: function () {
+        if (T.running) return;
+        S.focusLen = n; save(); setMode("focus"); renderAll();
+      } }, n + " د");
+      b.disabled = T.running;
+      lens.append(b);
+    });
+    var gate = $("#gate");
+    gate.hidden = !isLocked;
+    gate.replaceChildren();
+    if (isLocked) {
+      var ul = el("ul");
+      items.forEach(function (i) { var m = el("span", { class: "m" }); m.append(icon("check")); ul.append(el("li", { class: i.ok ? "ok" : "" }, m, i.label)); });
+      gate.append(el("h3", {}, "خلصي الورد الأول وبعدها المؤقت يفتح"), ul, el("button", { type: "button", class: "btn", onclick: function () { setView("wird"); } }, "افتح الورد والأذكار"));
+    }
+    var go = $("#go");
+    go.disabled = isLocked;
+    go.textContent = isLocked ? "مقفول" : T.running ? "إيقاف مؤقت" : (T.left < T.total ? "متابعة" : "ابدأ");
+    $("#reset").disabled = !T.running && T.left === T.total;
+    paintTime();
+  }
+
+  function subDot(sub) { return sub ? el("span", { class: "sw c" + sub.c }) : null; }
+  function taskRow(t) {
+    var cur = t.id === T.taskId && !t.done;
+    var row = el("div", { class: "task" + (cur ? " current" : "") + (t.done ? " is-done" : "") });
+    var chk = el("button", { type: "button", class: "check" + (t.done ? " on" : ""), "aria-pressed": String(t.done), "aria-label": t.done ? "إلغاء الإنجاز" : "تحديد كمنجزة", onclick: function () { toggleDone(t.id); } });
+    chk.append(icon("check"));
+    var sub = subjectById(t.sid);
+    var meta = el("div", { class: "t-meta" });
+    if (sub) { meta.append(subDot(sub), sub.n, "·"); }
+    meta.append((cur ? "التركيز الحالي · " : "") + (t.sess ? t.sess + " جلسة · " + t.mins + " د" : "بدون جلسات بعد"));
+    row.append(chk, el("div", { class: "t-body" }, el("div", { class: "t-title" }, t.t), meta));
+    if (!t.done) {
+      var f = el("button", { type: "button", class: "icon-btn" + (cur ? " on" : ""), "aria-label": "ركّز على هذه المهمة", "aria-pressed": String(cur), title: "ركّز على هذه المهمة", onclick: function () { focusOn(t.id); } });
+      f.append(icon("target"));
+      row.append(f);
+    }
+    var d = el("button", { type: "button", class: "icon-btn", "aria-label": "حذف المهمة", title: "حذف", onclick: function () { removeTask(t.id); } });
+    d.append(icon("trash"));
+    row.append(d);
+    return row;
+  }
+
+  function renderTasks() {
+    var today = dayKey();
+    var open = S.tasks.filter(function (t) { return !t.done; });
+    var done = S.tasks.filter(function (t) { return t.done && t.doneOn === today; });
+    var list = $("#list"), wrap = $("#doneWrap");
+    list.replaceChildren(); wrap.replaceChildren();
+    $("#taskInput").disabled = !loaded; $("#addBtn").disabled = !loaded;
+    var sel = $("#taskSub"), prev = sel.value;
+    sel.replaceChildren(el("option", { value: "" }, "بدون مادة"));
+    S.subjects.forEach(function (s) { sel.append(el("option", { value: s.id }, s.n)); });
+    sel.value = subjectById(prev) ? prev : "";
+    sel.hidden = !S.subjects.length;
+    $("#taskCount").textContent = loaded && (open.length || done.length) ? open.length + " متبقية" : "";
+    if (!loaded) { list.append(el("p", { class: "empty" }, "بنحمّل مهامك…")); return; }
+    if (!open.length && !done.length) {
+      var box = el("div", { class: "empty" }, "مفيش مهام لسه. اكتب أول مهمة أو اختر من هنا:");
+      var chips = el("div", { class: "chips" });
+      SUGGESTIONS.forEach(function (s) { chips.append(el("button", { type: "button", class: "chip", onclick: function () { addTask(s, ""); } }, s)); });
+      box.append(chips);
+      list.append(box);
+    } else if (!open.length) {
+      list.append(el("p", { class: "empty" }, "كل مهام اليوم خلصت."));
+    }
+    open.forEach(function (t) { list.append(taskRow(t)); });
+    if (done.length) {
+      var det = el("details", { class: "done" }, el("summary", {}, "المنجز اليوم (" + done.length + ")"));
+      done.forEach(function (t) { det.append(taskRow(t)); });
+      wrap.append(det);
+    }
+  }
+
+  function renderStats() {
+    var today = dayKey(), lg = todayLog();
+    var doneN = S.tasks.filter(function (t) { return t.done && t.doneOn === today; }).length;
+    var stats = $("#stats");
+    stats.replaceChildren();
+    [[doneN + "/" + S.tasks.length, "مهام منجزة"], [String(lg.s), "جلسات تركيز"], [String(lg.m), "دقائق تركيز"]].forEach(function (p) {
+      stats.append(el("div", { class: "stat" }, el("b", {}, p[0]), el("span", {}, p[1])));
+    });
+  }
+
+  function renderNext() {
+    var p = $("#nextLesson"), n = nextLesson();
+    p.hidden = !n;
+    if (!n) return;
+    var when = n.ongoing ? "دلوقتي" : n.add === 0 ? "النهاردة " + fmt12(n.l.from) : n.add === 1 ? "بكرة " + fmt12(n.l.from) : DAYS[n.l.day] + " " + fmt12(n.l.from);
+    p.replaceChildren("الدرس الجاي: ", el("b", {}, n.l.sub + (n.l.center ? " · " + n.l.center : "")), " — " + when);
+  }
+
+  function renderWeek() {
+    var days = [], max = 60, total = 0, i;
+    for (i = 6; i >= 0; i--) {
+      var ts = Date.now() - i * 864e5;
+      var m = (S.log[dayKey(ts)] || { m: 0 }).m;
+      days.push({ name: DAY_ABBR[dow(ts)], m: m, today: i === 0 });
+      total += m; if (m > max) max = m;
+    }
+    var plot = $("#plot"), axis = $("#axis");
+    plot.replaceChildren(); axis.replaceChildren();
+    days.forEach(function (x) {
+      var h = x.m === 0 ? 3 : Math.max(6, Math.round(x.m / max * 108));
+      var bar = el("div", { class: "bar" }); bar.style.height = h + "px";
+      plot.append(el("div", { class: "col" + (x.today ? " today" : "") + (x.m === 0 ? " zero" : ""), title: x.name + ": " + x.m + " دقيقة" }, el("div", { class: "v" }, x.m ? String(x.m) : ""), bar));
+      axis.append(el("span", { class: x.today ? "today" : "" }, x.name));
+    });
+    $("#weekTotal").textContent = total === 0 ? "لسه مفيش جلسات" : "الإجمالي: " + fmtMin(total);
+  }
+
+  function renderStudy() {
+    $("#subInput").disabled = !loaded; $("#subBtn").disabled = !loaded; $("#lBtn").disabled = !loaded;
+    $("#subCount").textContent = S.subjects.length ? S.subjects.length + " مواد" : "";
+    var list = $("#subList");
+    list.replaceChildren();
+    if (!S.subjects.length) list.append(el("p", { class: "empty" }, loaded ? "ضيفي موادك هنا، وبعدها اربطي كل مهمة بمادتها." : "بنحمّل موادك…"));
+    S.subjects.forEach(function (s) {
+      var rm = el("button", { type: "button", class: "icon-btn", "aria-label": "حذف مادة " + s.n, title: "حذف", onclick: function () { removeSubject(s.id); } });
+      rm.append(icon("x"));
+      list.append(el("span", { class: "subc" }, subDot(s), s.n, rm));
+    });
+    var dl = $("#subNames");
+    dl.replaceChildren();
+    S.subjects.forEach(function (s) { dl.append(el("option", { value: s.n })); });
+
+    var sums = {}, mx = 1;
+    for (var i = 0; i < 7; i++) {
+      var by = (S.log[dayKey(Date.now() - i * 864e5)] || {}).by || {};
+      Object.keys(by).forEach(function (k) { sums[k] = (sums[k] || 0) + by[k]; });
+    }
+    var rows = S.subjects.map(function (s) { return { s: s, m: sums[s.id] || 0 }; }).sort(function (a, b) { return b.m - a.m; });
+    rows.forEach(function (r) { if (r.m > mx) mx = r.m; });
+    var bars = $("#subBars");
+    bars.replaceChildren();
+    if (!rows.length) bars.append(el("p", { class: "empty" }, "هيظهر هنا وقت تركيزك لكل مادة."));
+    else if (!rows.some(function (r) { return r.m > 0; })) bars.append(el("p", { class: "empty" }, "اربطي مهمة بمادة وابدأي جلسة، وبعدها هتلاقي الوقت هنا."));
+    else rows.forEach(function (r) {
+      var fl = el("div", { class: "fl c" + r.s.c }); fl.style.width = Math.round(r.m / mx * 100) + "%";
+      bars.append(el("div", { class: "sbar" }, el("div", { class: "nm" }, subDot(r.s), el("span", {}, r.s.n)), el("div", { class: "tr" }, fl), el("div", { class: "mn" }, fmtMin(r.m))));
+    });
+
+    $("#lessonCount").textContent = S.lessons.length ? S.lessons.length + " مواعيد" : "";
+    var ll = $("#lessonList");
+    ll.replaceChildren();
+    if (!S.lessons.length) { ll.append(el("p", { class: "empty" }, loaded ? "مفيش مواعيد لسه. ضيفي أول درس من النموذج فوق." : "بنحمّل المواعيد…")); return; }
+    var todayDow = new Date().getDay(), order = [], k;
+    for (k = 0; k < 7; k++) order.push((todayDow + k) % 7);
+    order.forEach(function (d, idx) {
+      var ls = S.lessons.filter(function (l) { return l.day === d; }).sort(function (a, b) { return a.from < b.from ? -1 : 1; });
+      if (!ls.length) return;
+      var g = el("div", { class: "lday" }, el("h3", { class: idx === 0 ? "today" : "" }, DAYS[d] + (idx === 0 ? " · النهاردة" : idx === 1 ? " · بكرة" : "")));
+      ls.forEach(function (l) {
+        var sub = subjectByName(l.sub);
+        var rm = el("button", { type: "button", class: "icon-btn", "aria-label": "حذف الموعد", title: "حذف", onclick: function () { S.lessons = S.lessons.filter(function (x) { return x.id !== l.id; }); save(); renderAll(); } });
+        rm.append(icon("trash"));
+        g.append(el("div", { class: "lesson" }, el("div", { class: "l-time" }, fmt12(l.from) + " – " + fmt12(l.to)),
+          el("div", { class: "l-body" }, el("div", { class: "l-sub" }, subDot(sub), l.sub), l.center ? el("div", { class: "l-center" }, l.center) : null), rm));
+      });
+      ll.append(g);
+    });
+  }
+
+  function renderWird() {
+    var tk = dayKey(), p = portion(), friday = dow() === 5;
+    /* wird card */
+    var wc = $("#wirdCard");
+    wc.replaceChildren();
+    var wirdPill = el("span", { class: "pill " + (p.done ? "ok" : (S.gate.w ? "need" : "")) }, p.done ? "تم اليوم ✓" : S.gate.w ? "مطلوب قبل المؤقت" : "لم يُقرأ بعد");
+    wc.append(el("div", { class: "wl" }, el("h3", {}, "ورد اليوم"), wirdPill));
+    wc.append(el("div", { class: "portion" }, p.from === p.to ? "صفحة " + p.from : "الصفحات " + p.from + " – " + p.to));
+    wc.append(el("div", { class: "note-s" }, "الصفحة الحالية " + S.wird.pos + " من 604 · الختمات: " + S.wird.khatm));
+    var btns = el("div", { class: "btns" });
+    btns.append(el("button", { type: "button", class: "btn", onclick: function () { openReader("wird"); } }, p.done ? "اقرأ الورد تاني" : "اقرأ الورد هنا"));
+    btns.append(el("a", { class: "btn ghost", href: QURAN_PAGE(p.from), target: "_blank", rel: "noopener" }, "افتحه على quran.com"));
+    wc.append(btns);
+    if (!p.done) {
+      var ok = el("button", { type: "button", class: "btn ghost", style: "margin-top:10px;width:100%" }, "قرأته في مصحفي");
+      armed(ok, "قرأته في مصحفي", finishWird);
+      wc.append(ok);
+    }
+    if (p.done) wc.append(el("p", { class: "note-s" }, "ورد بكرة يبدأ من صفحة " + S.wird.pos + "."));
+
+    /* kahf card */
+    var kc = $("#kahfCard"), kdone = S.kahf === tk;
+    kc.replaceChildren();
+    kc.append(el("div", { class: "wl" }, el("h3", {}, "سورة الكهف"),
+      el("span", { class: "pill " + (kdone ? "ok" : friday && S.gate.k ? "need" : "") }, kdone ? "تمت اليوم ✓" : friday ? (S.gate.k ? "مطلوبة قبل المذاكرة" : "النهاردة الجمعة") : "كل يوم جمعة")));
+    kc.append(el("p", { class: "note-s" }, friday ? "النهاردة الجمعة. اقري الكهف الأول وبعدها المؤقت يفتح." : "بتتطلب يوم الجمعة. تقدري تقريها في أي يوم وتسجليها."));
+    var kb = el("div", { class: "btns" }, el("button", { type: "button", class: "btn", onclick: function () { openReader("kahf"); } }, kdone ? "اقرأ الكهف تاني" : "اقرأ الكهف هنا"), el("a", { class: "btn ghost", href: KAHF_URL, target: "_blank", rel: "noopener" }, "افتحها على quran.com"));
+    kc.append(kb);
+    if (!kdone) { var kk = el("button", { type: "button", class: "btn ghost", style: "margin-top:10px;width:100%" }, "قرأتها في مصحفي"); armed(kk, "قرأتها في مصحفي", finishKahf); kc.append(kk); }
+
+    /* settings */
+    var st = $("#settings");
+    st.replaceChildren();
+    function opt(id, label, checked, on) {
+      var cb = el("input", { type: "checkbox", id: id }); cb.checked = checked;
+      cb.addEventListener("change", function () { on(cb.checked); save(); renderAll(); });
+      return el("div", { class: "opt" }, cb, el("label", { for: id }, label));
+    }
+    st.append(el("p", { class: "note-s", style: "margin:0 0 4px" }, "المؤقت يفضل مقفول لحد ما تخلصي المطلوب من دول:"));
+    st.append(opt("gW", "ورد القرآن اليومي", S.gate.w, function (v) { S.gate.w = v; }));
+    st.append(opt("gK", "سورة الكهف يوم الجمعة", S.gate.k, function (v) { S.gate.k = v; }));
+    st.append(opt("gAm", "أذكار الصباح", S.gate.am, function (v) { S.gate.am = v; }));
+    st.append(opt("gPm", "أذكار المساء", S.gate.pm, function (v) { S.gate.pm = v; }));
+    var sizes = [[1, "صفحة واحدة"], [2, "صفحتان"], [3, "3 صفحات"], [4, "4 صفحات"], [5, "5 صفحات"], [10, "10 صفحات (حزب)"], [20, "20 صفحة (جزء)"]];
+    var selSize = el("select", { class: "in", id: "wSize" });
+    sizes.forEach(function (z) { var o = el("option", { value: z[0] }, z[1]); if (S.wird.size === z[0]) o.selected = true; selSize.append(o); });
+    selSize.addEventListener("change", function () { S.wird.size = +selSize.value; save(); renderAll(); });
+    var inPos = el("input", { class: "in", id: "wPos", type: "number", min: "1", max: "604", inputmode: "numeric" }); inPos.value = S.wird.pos;
+    inPos.addEventListener("change", function () { var v = Math.min(604, Math.max(1, Math.round(+inPos.value || 1))); S.wird.pos = v; save(); renderAll(); });
+    var starts = [[0, "منتصف الليل"], [3, "3 صباحًا"], [4, "4 فجرًا"], [5, "5 صباحًا"]];
+    var selDay = el("select", { class: "in", id: "wDay" });
+    starts.forEach(function (z) { var o = el("option", { value: z[0] }, z[1]); if (S.dayStart === z[0]) o.selected = true; selDay.append(o); });
+    selDay.addEventListener("change", function () { S.dayStart = +selDay.value; dayStartH = S.dayStart; S.adk.d = dayKey(); S.adk.prog = {}; save(); renderAll(); renderAdhkar(true); });
+    st.append(el("div", { class: "set-grid" },
+      el("div", { class: "fld" }, el("label", { for: "wSize" }, "الورد اليومي"), selSize),
+      el("div", { class: "fld" }, el("label", { for: "wPos" }, "الصفحة اللي هتبدأي منها"), inPos),
+      el("div", { class: "fld" }, el("label", { for: "wDay" }, "اليوم الجديد يبدأ من"), selDay)));
+    st.append(el("p", { class: "note-s" }, "اليوم الجديد بيتحسب من الساعة اللي تختاريها، فاللي بتخلصيه بعد منتصف الليل يتحسب لنفس اليوم."));
+  }
+
+  /* adhkar: core categories rebuilt on change; the 132 chapters build their items only when opened */
+  var openCats = {};
+  var adErr = false, chapDone = false;
+  function stripMarks(s) { return String(s).replace(/[ؐ-ًؚ-ٰٟۖ-ۭـ]/g, "").replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه"); }
+  function loadAdhkar() {
+    if (AD) return Promise.resolve(AD);
+    if (adLoading) return adLoading;
+    adLoading = fetch("adhkar.json").then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.json(); }).then(function (d) {
+      if (!Array.isArray(d) || d.length !== 132) throw new Error("bad data");
+      d.forEach(function (c) { adByCh[c.id] = c; });
+      AD = d; return d;
+    }).catch(function (e) { adLoading = null; throw e; });
+    return adLoading;
+  }
+  function chapItems(ch, hide) {
+    var c = adByCh[ch]; if (!c) return [];
+    return c.a.filter(function (x) { return !hide || hide.indexOf(x[0]) < 0; }).map(function (x) {
+      return { id: String(x[0]), t: x[1], n: COUNT_FIX[ch + ":" + x[0]] || x[2], custom: false };
+    });
+  }
+  function catItems(c) {
+    if (CORE_BY[c]) {
+      return chapItems(CORE_BY[c].ch, CORE_BY[c].hide).concat((S.adk.custom[c] || []).map(function (x) { return { id: x.id, t: x.t, n: x.n, custom: true }; }));
+    }
+    return chapItems(+String(c).slice(1), null);
+  }
+  function catProgress(c) {
+    var items = catItems(c), prog = S.adk.prog[c] || {}, doneN = 0;
+    items.forEach(function (it) { if ((prog[it.id] || 0) >= it.n) doneN++; });
+    return { done: doneN, total: items.length };
+  }
+  function syncCat(c) {
+    var core = !!CORE_BY[c], pr = AD ? catProgress(c) : { done: 0, total: 0 }, all = pr.total > 0 && pr.done === pr.total;
+    if (core && all && S.adk.done[c] !== dayKey()) S.adk.done[c] = dayKey();
+    var flag = core && S.adk.done[c] === dayKey();
+    var sum = document.querySelector('[data-sum="' + c + '"]');
+    if (sum && AD) { sum.textContent = (flag ? "تم ✓ " : "") + pr.done + "/" + pr.total; sum.className = "pill" + (flag ? " ok" : ""); }
+    var dn = 0;
+    CAT_ORDER.forEach(function (k) { if (S.adk.done[k] === dayKey()) dn++; });
+    $("#adkSum").textContent = dn + " من " + CAT_ORDER.length + " مكتملة اليوم";
+  }
+  function itemRow(c, it, onRemove) {
+    var prog = S.adk.prog[c] || {}, n = prog[it.id] || 0, full = n >= it.n;
+    var btn = el("button", { type: "button", class: "cnt", "aria-label": "عدّاد الذكر" }, n + "/" + it.n);
+    var row = el("div", { class: "dh" + (full ? " full" : "") });
+    btn.addEventListener("click", function () {
+      S.adk.prog[c] = S.adk.prog[c] || {};
+      var cur = S.adk.prog[c][it.id] || 0;
+      cur = cur >= it.n ? 0 : cur + 1;
+      S.adk.prog[c][it.id] = cur;
+      btn.textContent = cur + "/" + it.n;
+      row.classList.toggle("full", cur >= it.n);
+      syncCat(c); save(); renderTimer();
+    });
+    row.append(btn, el("div", { class: "tx" }, it.t));
+    if (it.custom) {
+      var rm = el("button", { type: "button", class: "icon-btn", "aria-label": "حذف الذكر", title: "حذف", onclick: onRemove });
+      rm.append(icon("trash")); row.append(rm);
+    }
+    return row;
+  }
+  function resetBtn(c, rebuild) {
+    var b = el("button", { type: "button", class: "btn ghost" }, "إعادة العدّ");
+    b.addEventListener("click", function () { S.adk.prog[c] = {}; if (CORE_BY[c]) delete S.adk.done[c]; save(); openCats[c] = true; rebuild(); syncCat(c); renderTimer(); });
+    return b;
+  }
+  function coreDetails(c) {
+    var info = CORE_BY[c], det = el("details", { class: "cat" });
+    if (openCats[c]) det.open = true;
+    det.addEventListener("toggle", function () { openCats[c] = det.open; });
+    det.append(el("summary", {}, info.name, el("span", { class: "sp" }), el("span", { class: "pill", "data-sum": c })));
+    catItems(c).forEach(function (it) {
+      det.append(itemRow(c, it, function () {
+        S.adk.custom[c] = (S.adk.custom[c] || []).filter(function (x) { return x.id !== it.id; }); save(); renderAdhkar(); syncCat(c); renderTimer();
+      }));
+    });
+    var tIn = el("input", { class: "in", id: "ct-" + c, type: "text", dir: "auto", maxlength: "200", placeholder: "اكتبي ذكرك" });
+    var nIn = el("input", { class: "in", id: "cn-" + c, type: "number", min: "1", max: "1000", inputmode: "numeric", value: "1" });
+    var add = el("button", { type: "button", class: "btn ghost" }, "إضافة");
+    add.addEventListener("click", function () {
+      var t = tIn.value.trim(); if (!t) return;
+      S.adk.custom[c] = (S.adk.custom[c] || []).concat([{ id: uid(), t: t.slice(0, 200), n: Math.min(1000, Math.max(1, Math.round(+nIn.value || 1))) }]);
+      save(); openCats[c] = true; renderAdhkar(); syncCat(c); renderTimer();
+    });
+    var fin = el("button", { type: "button", class: "btn ghost" }, "خلصتها");
+    armed(fin, "خلصتها", function () { S.adk.done[c] = dayKey(); save(); openCats[c] = true; syncCat(c); renderTimer(); });
+    det.append(el("div", { class: "cat-foot" },
+      el("div", { class: "fld" }, el("label", { for: "ct-" + c }, "ذكر من عندك"), tIn),
+      el("div", { class: "fld n" }, el("label", { for: "cn-" + c }, "العدد"), nIn), add),
+      el("div", { class: "cat-foot" }, fin, resetBtn(c, renderAdhkar)));
+    return det;
+  }
+  function chapterDetails(ch) {
+    var key = "h" + ch.id, det = el("details", { class: "cat chap", "data-t": stripMarks(ch.c) });
+    var body = el("div", { class: "chap-body" });
+    function fill() {
+      body.replaceChildren();
+      catItems(key).forEach(function (it) { body.append(itemRow(key, it)); });
+      body.append(el("div", { class: "cat-foot" }, resetBtn(key, fill)));
+    }
+    det.append(el("summary", {}, ch.c, el("span", { class: "sp" }), el("span", { class: "pill", "data-sum": key }, ch.a.length + " ذكر")), body);
+    if (openCats[key]) { det.open = true; fill(); det.dataset.built = "1"; }
+    det.addEventListener("toggle", function () {
+      openCats[key] = det.open;
+      if (det.open && !det.dataset.built) { fill(); det.dataset.built = "1"; }
+    });
+    return det;
+  }
+  function renderAdhkar(full) {
+    var root = $("#adhkar");
+    if (!AD) {
+      root.replaceChildren(adErr
+        ? el("div", {}, el("p", { class: "empty" }, "مقدرناش نحمّل الأذكار دلوقتي. تأكدي من الاتصال وجرّبي تاني."), el("button", { type: "button", class: "btn", onclick: function () { adErr = false; renderAdhkar(); bootAdhkar(); } }, "جرّبي تاني"))
+        : el("p", { class: "empty" }, "بنحمّل الأذكار…"));
+      return;
+    }
+    var coreBox = $("#adkCore");
+    if (!coreBox) {
+      root.replaceChildren();
+      coreBox = el("div", { id: "adkCore" });
+      var allHead = el("h3", { class: "sub-h" }, "كل أذكار حصن المسلم");
+      var search = el("input", { class: "in", id: "adkSearch", type: "search", dir: "auto", placeholder: "ابحثي عن ذكر أو دعاء، مثل: السفر", "aria-label": "بحث في أذكار حصن المسلم" });
+      var none = el("p", { class: "empty", id: "adkNone", hidden: "" }, "مفيش نتيجة بالاسم ده.");
+      search.addEventListener("input", function () {
+        var q = stripMarks(search.value).trim(), shown = 0;
+        document.querySelectorAll("#adkAll details.chap").forEach(function (d) { var ok = !q || d.getAttribute("data-t").indexOf(q) >= 0; d.hidden = !ok; if (ok) shown++; });
+        $("#adkNone").hidden = shown > 0;
+      });
+      root.append(coreBox, allHead, search, none, el("div", { id: "adkAll" }));
+      chapDone = false;
+    }
+    coreBox.replaceChildren();
+    CAT_ORDER.forEach(function (c) { coreBox.append(coreDetails(c)); });
+    if (!chapDone || full) {
+      var all = $("#adkAll"); all.replaceChildren();
+      AD.forEach(function (ch) { all.append(chapterDetails(ch)); });
+      chapDone = true;
+      var q = stripMarks($("#adkSearch").value).trim();
+      if (q) $("#adkSearch").dispatchEvent(new Event("input"));
+    }
+    CAT_ORDER.forEach(syncCat);
+  }
+  function bootAdhkar() { loadAdhkar().then(function () { renderAdhkar(true); }).catch(function () { adErr = true; renderAdhkar(); }); }
+
+  function renderFoot() {
+    var cloud = store.mode === "cloud";
+    $("#dot").className = "dot" + (cloud ? " cloud" : "");
+    $("#storeNote").textContent = !loaded ? "بنحمّل بياناتك…" : "كل بياناتك محفوظة على جهازك إنتي بس.";
+  }
+
+  /* ---------- visits (mirror document only the owner can read), owner board, privacy ---------- */
+  async function registerVisit() {
+    if (store.mode !== "cloud" || !store.db || !store.uid) return;
+    var now = Date.now(), v = S.vis, today = dayKey(now), isNew = !v.last || now - v.last > 30 * 60 * 1000;
+    if (isNew) {
+      v.n += 1; v.first = v.first || now; v.last = now;
+      if (v.days[v.days.length - 1] !== today) v.days.push(today);
+      v.days = v.days.slice(-60);
+      save();
+    }
+    if (isNew || !v.mirrored) {
+      try {
+        await store.db.doc("visitors/" + store.uid).set({ first: v.first, last: v.last, n: v.n, days: v.days });
+        ACC.visitOk = true;
+        if (!v.mirrored) { v.mirrored = true; save(); }
+      } catch (e) { ACC.visitOk = false; if (v.mirrored) { v.mirrored = false; save(); } }
+    } else { ACC.visitOk = true; }
+    renderFoot();
+  }
+  var VIS = [];
+  var fmtWhen = function (ts) { try { return new Intl.DateTimeFormat("ar-EG-u-nu-latn", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(new Date(ts)); } catch (e) { return ""; } };
+  function subscribeVisitors() {
+    if (!ACC.owner || !store.db) return;
+    $("#tabOwner").hidden = false;
+    try {
+      store.db.collection("visitors").onSnapshot(function (snap) {
+        VIS = snap.docs.map(function (d) { var x = d.data() || {}; return { id: d.id, first: +x.first || 0, last: +x.last || 0, n: +x.n || 0, days: Array.isArray(x.days) ? x.days : [] }; });
+        renderOwner();
+      }, function () { $("#ownNote").textContent = "مقدرناش نقرأ السجل دلوقتي."; });
+    } catch (e) { /* ignore */ }
+  }
+  async function renderOwner() {
+    if (!ACC.owner) return;
+    var list = VIS.slice().sort(function (a, b) { return b.last - a.last; });
+    var names = {};
+    try { names = (await store.user.profiles(list.map(function (x) { return x.id; }))) || {}; } catch (e) { names = {}; }
+    var today = dayKey(), week = {}, i;
+    for (i = 0; i < 7; i++) week[dayKey(Date.now() - i * 864e5)] = 1;
+    var actToday = 0, act7 = 0, visits = 0;
+    list.forEach(function (x) {
+      visits += x.n;
+      if (x.days.indexOf(today) >= 0) actToday++;
+      if (x.days.some(function (d) { return week[d]; })) act7++;
+    });
+    $("#ownNote").textContent = "بيتحدّث لحظيًا";
+    var tiles = $("#oTiles"); tiles.replaceChildren();
+    [[list.length, "عدد المسجّلين"], [actToday, "دخلوا النهاردة"], [act7, "نشطين آخر 7 أيام"], [visits, "مرات الدخول"]].forEach(function (t) {
+      tiles.append(el("div", { class: "stat" }, el("b", {}, String(t[0])), el("span", {}, t[1])));
+    });
+    var counts = [], labels = [], mx = 3;
+    for (i = 13; i >= 0; i--) {
+      var ts = Date.now() - i * 864e5, k = dayKey(ts), c = list.filter(function (x) { return x.days.indexOf(k) >= 0; }).length;
+      counts.push({ c: c, today: i === 0 }); labels.push(String(shifted(ts).getDate())); if (c > mx) mx = c;
+    }
+    var plot = $("#oPlot"), axis = $("#oAxis"); plot.replaceChildren(); axis.replaceChildren();
+    counts.forEach(function (x, j) {
+      var bar = el("div", { class: "bar" }); bar.style.height = (x.c === 0 ? 3 : Math.max(6, Math.round(x.c / mx * 108))) + "px";
+      plot.append(el("div", { class: "col" + (x.today ? " today" : "") + (x.c === 0 ? " zero" : "") }, el("div", { class: "v" }, x.c ? String(x.c) : ""), bar));
+      axis.append(el("span", { class: x.today ? "today" : "" }, labels[j]));
+    });
+    var box = $("#oList"); box.replaceChildren();
+    if (!list.length) { box.append(el("p", { class: "empty" }, "لسه محدش اتسجل. أول ما حد يدخل بحسابه هيظهر هنا.")); return; }
+    var byFirst = list.slice().sort(function (a, b) { return a.first - b.first; }), idx = {};
+    byFirst.forEach(function (x, j) { idx[x.id] = j + 1; });
+    list.forEach(function (x) {
+      var pr = names[x.id] || {};
+      var nm = (pr.name || "مستخدم " + idx[x.id]) + (pr.isMe ? " (أنتِ)" : "");
+      var rm = el("button", { type: "button", class: "btn ghost" }, "إزالة");
+      armed(rm, "إزالة", function () { store.db.doc("visitors/" + x.id).delete().catch(function () { /* ignore */ }); });
+      box.append(el("div", { class: "vrow" },
+        el("div", { class: "v-body" }, el("div", { class: "v-name" }, nm), el("div", { class: "v-meta" }, "أول دخول " + fmtWhen(x.first) + " · آخر دخول " + fmtWhen(x.last))),
+        el("div", { class: "v-n", title: "عدد مرات الدخول" }, "×" + x.n), pr.isMe ? null : rm));
+    });
+  }
+  function exportBackup() {
+    flush();
+    var blob = new Blob([JSON.stringify(S)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "DMA-backup-" + dayKey(Date.now()) + ".json";
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+    $("#wipeMsg").textContent = "اتحفظت النسخة الاحتياطية في ملفاتك.";
+  }
+  function importBackup(file) {
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var d = JSON.parse(String(r.result));
+        if (!d || typeof d !== "object" || Array.isArray(d)) throw new Error("bad");
+        stopTimer(); S = normalize(d); save();
+        T.mode = "focus"; T.total = modeSec("focus"); T.left = T.total; T.lit = -1; T.sid = ""; T.sub = ""; T.taskId = null;
+        renderAll(); renderAdhkar(true); renderPrivacy();
+        $("#wipeMsg").textContent = "اتسترجعت النسخة الاحتياطية.";
+      } catch (e) { $("#wipeMsg").textContent = "الملف ده مش نسخة احتياطية صالحة."; }
+    };
+    r.readAsText(file);
+  }
+  function renderPrivacy() {
+    var d = $("#privacy"); d.replaceChildren();
+    d.append(el("summary", {}, "الخصوصية وبياناتك"));
+    d.append(el("p", {}, "التطبيق مش بيطلب حساب ولا إيميل، ومش بيبعت مذاكرتك ولا بياناتك لأي مكان. صاحبة التطبيق بتعرف بس عدد الزيارات من غير أسماء ولا أي بيانات شخصية. مذاكرتك ومهامك وورد القرآن والأذكار محفوظة على جهازك وفي المتصفح ده بس، ومحدش يقدر يشوفها."));
+    d.append(el("p", {}, "عشان البيانات متضيعش لو مسحتي بيانات المتصفح أو غيّرتي الموبايل، احفظي نسخة احتياطية من وقت لوقت."));
+    var row = el("div", { class: "bk" });
+    var bk = el("button", { type: "button", class: "btn ghost" }, "حفظ نسخة احتياطية");
+    bk.addEventListener("click", exportBackup);
+    var fi = el("input", { type: "file", accept: "application/json,.json", hidden: "" });
+    fi.addEventListener("change", function () { if (fi.files && fi.files[0]) importBackup(fi.files[0]); fi.value = ""; });
+    var rb = el("button", { type: "button", class: "btn ghost" }, "استرجاع نسخة");
+    rb.addEventListener("click", function () { fi.click(); });
+    row.append(bk, rb, fi); d.append(row);
+    var wipe = el("button", { type: "button", class: "btn ghost" }, "امسحي كل بياناتي");
+    armed(wipe, "امسحي كل بياناتي", wipeMe);
+    d.append(wipe, el("p", { id: "wipeMsg", role: "status" }, ""));
+  }
+  async function wipeMe() {
+    clearTimeout(saveTimer); dirty = false;
+    try { if (store.db && store.uid) await store.db.doc("visitors/" + store.uid).delete(); } catch (e) { /* ignore */ }
+    try { if (store.ref) await store.ref.delete(); } catch (e) { /* ignore */ }
+    try { localStorage.removeItem(LS_KEY); localStorage.removeItem("yawmi.v1"); } catch (e) { /* ignore */ }
+    stopTimer(); S = fresh(); ACC.visitOk = null;
+    T.mode = "focus"; T.total = modeSec("focus"); T.left = T.total; T.lit = -1; T.sid = ""; T.sub = ""; T.taskId = null;
+    renderAll(); renderAdhkar(true); renderPrivacy();
+    $("#wipeMsg").textContent = "اتمسحت كل بياناتك من الجهاز ده.";
+  }
+
+  var view = "today";
+  function setView(v) {
+    view = v;
+    ["today", "study", "wird", "owner"].forEach(function (k) { $("#v-" + k).hidden = k !== v; });
+    document.querySelectorAll("#tabs button").forEach(function (b) { b.setAttribute("aria-selected", String(b.getAttribute("data-v") === v)); });
+    window.scrollTo(0, 0);
+  }
+
+  function renderAll() { renderStats(); renderNext(); renderTimer(); renderTasks(); renderWeek(); renderStudy(); renderWird(); renderFoot(); syncAdhkarSummary(); }
+  function syncAdhkarSummary() { CAT_ORDER.forEach(syncCat); }
+
+  /* ---------- in-app Quran reader (text: Tanzil Uthmani, loaded from quran.json beside this page) ---------- */
+  var Q = null, qLoading = null, R = { open: false, kind: "", io: null, lastFocus: null };
+  var DIG = "٠١٢٣٤٥٦٧٨٩";
+  function ayaNum(n) { return String(n).replace(/\d/g, function (d) { return DIG[+d]; }); }
+  function loadQuran() {
+    if (Q) return Promise.resolve(Q);
+    if (qLoading) return qLoading;
+    qLoading = fetch("quran.json").then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.json(); }).then(function (d) {
+      if (!d || !d.a || d.a.length !== 6236 || !d.p || d.p.length !== 604 || !d.suras || d.suras.length !== 114) throw new Error("bad data");
+      d.starts = []; d.pageAt = {};
+      var i = 0;
+      d.suras.forEach(function (s) { d.starts.push(i); i += s.ayas; });
+      d.p.forEach(function (idx, k) { d.pageAt[idx] = k + 1; });
+      Q = d; return d;
+    }).catch(function (e) { qLoading = null; throw e; });
+    return qLoading;
+  }
+  function suraAt(i) {
+    var lo = 0, hi = Q.starts.length - 1;
+    while (lo < hi) { var mid = (lo + hi + 1) >> 1; if (Q.starts[mid] <= i) lo = mid; else hi = mid - 1; }
+    return lo;
+  }
+  function pageOf(i) {
+    var lo = 0, hi = Q.p.length - 1;
+    while (lo < hi) { var mid = (lo + hi + 1) >> 1; if (Q.p[mid] <= i) lo = mid; else hi = mid - 1; }
+    return lo + 1;
+  }
+  function buildText(from, to) {
+    var frag = document.createDocumentFragment(), para = null;
+    for (var i = from; i < to; i++) {
+      var si = suraAt(i), aya = i - Q.starts[si] + 1, text = Q.a[i], n = si + 1;
+      var pg = Q.pageAt[i] || (i === from ? pageOf(i) : 0);
+      if (pg) { para = null; frag.append(el("div", { class: "pg-mark" }, "صفحة " + pg)); }
+      if (aya === 1) {
+        para = null;
+        frag.append(el("div", { class: "sura-h" }, "سورة " + Q.suras[si].name));
+        if (n !== 1 && n !== 9) {
+          var tk = text.split(" ");
+          frag.append(el("div", { class: "bism" }, tk.slice(0, 4).join(" ")));
+          text = tk.slice(4).join(" ");
+        }
+      }
+      if (!para) { para = el("p", { class: "qp" }); frag.append(para); }
+      if (text) para.append(el("span", {}, text + " "));
+      para.append(el("span", { class: "qn" }, "﴿" + ayaNum(aya) + "﴾"), " ");
+    }
+    return frag;
+  }
+  function applyFs() { $("#rdText").style.setProperty("--qfs", S.rfs + "px"); }
+  function setupDone(kind, done) {
+    var foot = $("#rdFoot");
+    foot.replaceChildren();
+    if (done) { foot.append(el("span", { class: "pill ok" }, "تمت قراءتها اليوم ✓")); return; }
+    var hint = el("span", { class: "note-s", style: "flex:1;margin:0" }, "انزلي لآخر القراءة عشان زر التأكيد يشتغل.");
+    var btn = el("button", { type: "button", class: "btn" }, kind === "kahf" ? "قرأت الكهف" : "قرأت الورد");
+    btn.disabled = true;
+    armed(btn, btn.textContent, function () { if (kind === "kahf") finishKahf(); else finishWird(); closeReader(); });
+    foot.append(hint, btn);
+    var enable = function () { btn.disabled = false; hint.textContent = "خلصتي؟ اضغطي مرتين للتأكيد."; };
+    if ("IntersectionObserver" in window) {
+      if (R.io) R.io.disconnect();
+      R.io = new IntersectionObserver(function (ents) {
+        if (ents.some(function (e) { return e.isIntersecting; })) { enable(); R.io.disconnect(); }
+      }, { root: $("#rdScroll"), threshold: 0.1 });
+      R.io.observe($("#rdEnd"));
+    } else { enable(); }
+  }
+  function openReader(kind) {
+    var p = portion(), rd = $("#reader");
+    var done = kind === "kahf" ? S.kahf === dayKey() : p.done;
+    R.open = true; R.kind = kind; R.lastFocus = document.activeElement;
+    rd.hidden = false; document.body.style.overflow = "hidden";
+    $("#rdTitle").textContent = kind === "kahf" ? "سورة الكهف" : (p.from === p.to ? "ورد اليوم · صفحة " + p.from : "ورد اليوم · صفحات " + p.from + " – " + p.to);
+    var txt = $("#rdText");
+    txt.replaceChildren(el("p", { class: "note-s" }, "بنحمّل المصحف…"));
+    $("#rdScroll").scrollTop = 0;
+    $("#rdFoot").replaceChildren();
+    applyFs();
+    loadQuran().then(function (q) {
+      if (!R.open || R.kind !== kind) return;
+      var from, to;
+      if (kind === "kahf") { from = q.starts[17]; to = q.starts[18]; }
+      else { from = q.p[p.from - 1]; to = p.to < 604 ? q.p[p.to] : 6236; }
+      txt.replaceChildren(buildText(from, to));
+      $("#rdScroll").scrollTop = 0;
+      setupDone(kind, done);
+    }).catch(function () {
+      txt.replaceChildren(el("p", { class: "msg" }, "مقدرناش نحمّل نص المصحف دلوقتي. تأكدي من النت وجربي تاني، أو افتحيه على quran.com."),
+        el("a", { class: "btn ghost", href: kind === "kahf" ? KAHF_URL : QURAN_PAGE(p.from), target: "_blank", rel: "noopener" }, "افتح على quran.com"));
+    });
+    $("#rdClose").focus();
+  }
+  function closeReader() {
+    R.open = false;
+    $("#reader").hidden = true;
+    document.body.style.overflow = "";
+    if (R.io) { R.io.disconnect(); R.io = null; }
+    try { if (R.lastFocus && R.lastFocus.focus) R.lastFocus.focus(); } catch (e) { /* ignore */ }
+  }
+  $("#rdClose").addEventListener("click", closeReader);
+  $("#rdSmaller").addEventListener("click", function () { S.rfs = Math.max(20, S.rfs - 2); applyFs(); save(); });
+  $("#rdBigger").addEventListener("click", function () { S.rfs = Math.min(44, S.rfs + 2); applyFs(); save(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && R.open) closeReader(); });
+
+  /* ---------- wiring ---------- */
+  document.querySelectorAll("#tabs button").forEach(function (b) { b.addEventListener("click", function () { setView(b.getAttribute("data-v")); }); });
+  document.querySelectorAll("#modes button").forEach(function (b) {
+    b.addEventListener("click", function () { if (!T.running) { setNote(""); setMode(b.getAttribute("data-m")); } });
+  });
+  $("#go").addEventListener("click", function () { if (T.running) pauseTimer(); else startTimer(); });
+  $("#reset").addEventListener("click", function () { stopTimer(); T.left = T.total; T.lit = -1; T.sid = ""; setNote(""); persistTimer(); renderTimer(); });
+  $("#skip").addEventListener("click", function () { setNote(""); setMode(T.mode === "focus" ? nextBreak() : "focus"); });
+  $("#addForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var inp = $("#taskInput");
+    addTask(inp.value, $("#taskSub").value);
+    inp.value = ""; inp.focus();
+  });
+  $("#subForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var inp = $("#subInput");
+    addSubject(inp.value);
+    inp.value = ""; inp.focus();
+  });
+  (function fillDays() {
+    var sel = $("#lDay"), td = new Date().getDay();
+    WEEK_ORDER.forEach(function (d) { var o = el("option", { value: d }, DAYS[d]); if (d === td) o.selected = true; sel.append(o); });
+  })();
+  $("#lessonForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!loaded) return;
+    var sub = $("#lSub").value.trim(), center = $("#lCenter").value.trim(), day = +$("#lDay").value, from = $("#lFrom").value, to = $("#lTo").value, msg = $("#lessonMsg");
+    if (!sub || !from || !to) { msg.textContent = "اكتبي المادة وحددي وقت البداية والنهاية."; return; }
+    if (to <= from) { msg.textContent = "وقت النهاية لازم يكون بعد وقت البداية."; return; }
+    msg.textContent = "";
+    S.lessons.push({ id: uid(), sub: sub.slice(0, 60), center: center.slice(0, 60), day: day, from: from, to: to });
+    $("#lSub").value = ""; $("#lCenter").value = ""; $("#lFrom").value = ""; $("#lTo").value = "";
+    save(); renderAll();
+  });
+
+  try {
+    $("#today").textContent = new Intl.DateTimeFormat("ar-EG-u-nu-latn", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
+  } catch (e) { $("#today").textContent = new Date().toDateString(); }
+
+  (function splash() {
+    var sp = document.getElementById("splash"); if (!sp) return;
+    var gone = function () { try { sp.remove(); } catch (e) { sp.hidden = true; } };
+    sp.addEventListener("click", gone);
+    setTimeout(gone, 3600);
+  })();
+  renderAll();
+  renderAdhkar();
+  bootAdhkar();
+  /* ---------- عبارات تحفيزية: واحدة جديدة كل ما التطبيق يتفتح ---------- */
+  var QUOTES = ["خطوة صغيرة كل يوم أحسن من حلم كبير ما بدأتيش فيه.", "التعب النهارده هو الفرحة بكرة.", "ركّزي في الجلسة دي بس، والباقي هييجي.", "مش لازم تكوني مثالية، لازم تكوني مستمرة.", "كل دقيقة مذاكرة دلوقتي بتشتري راحة بال بعدين.", "اللي بيبدأ وهو مش جاهز بيوصل قبل اللي مستني.", "حلمك يستاهل التعب.", "ابدئي بأصعب حاجة وهتلاقي الباقي أسهل.", "النجاح مجموعة مجهودات صغيرة بتتكرر كل يوم.", "ما تقارنيش نفسك بحد، قارني نفسك بنفسك إمبارح.", "الصبر مفتاح، والمذاكرة الباب.", "انتي أقوى من إنك تستسلمي.", "وقتك بركة لو استغليتيه صح.", "ريّحي دماغك في الراحة، وارجعي أقوى.", "الإنجاز بيبدأ بقرار: ابدأي دلوقتي.", "كل صفحة بتخلصيها خطوة أقرب لحلمك.", "التركيز عادة، وكل جلسة بتقوّيها.", "المجهود اللي ما حدش شايفه هو اللي بيصنع النتيجة.", "لما تحسي بالملل افتكري ليه بدأتي.", "النهارده فرصة جديدة تبقي فيها أحسن.", "اشتغلي بهدوء، والنتيجة هتتكلم.", "الطريق الطويل بيخلص بخطوة ورا خطوة.", "ما تأجليش النهارده لبكرة، بكرة له شغله.", "ثقي في نفسك، انتي بتعملي أكتر مما تتخيلي.", "التعب بيعدّي، والنجاح بيفضل.", "جلسة تركيز واحدة ممكن تغيّر يومك كله.", "الانضباط أهم من الحماس.", "اللي بيزرع في المذاكرة بيحصد في النتيجة.", "افتخري بنفسك على كل حاجة خلصتيها النهارده.", "ربنا يوفقك، وانتي كمّلي بجد واجتهاد.", "النوم والأكل والراحة جزء من المذاكرة، اهتمي بنفسك.", "كمّلي، المستقبل مستنيكي.", "مش لازم تشوفي الطريق كله، كفاية الخطوة الجاية.", "الوقت زي الميّه، لو ما استخدمتيهوش بيعدّي.", "كل غلطة بتتعلمي منها بتقرّبك من الصح."];
+  var qi = 0;
+  function pickQuote() {
+    var last = -1;
+    try { last = parseInt(localStorage.getItem("malak.q"), 10); } catch (e) {}
+    qi = Math.floor(Math.random() * QUOTES.length);
+    if (qi === last) qi = (qi + 1) % QUOTES.length;
+    try { localStorage.setItem("malak.q", String(qi)); } catch (e) {}
+    showQuote();
+  }
+  function showQuote() { var q = $("#quote"); if (q) q.textContent = QUOTES[qi]; }
+  $("#quote").addEventListener("click", function () { qi = (qi + 1) % QUOTES.length; showQuote(); });
+
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () { /* ignore */ }); });
+  }
+
+  (async function boot() {
+    pickQuote();
+    await Promise.race([initStore(), new Promise(function (r) { setTimeout(r, 4000); })]);
+    sealed = true;
+    if (ACC.signedOut) { $("#appRoot").hidden = true; $("#signin").hidden = false; return; }
+    await load();
+    loaded = true;
+    var first = S.tasks.filter(function (t) { return !t.done; })[0];
+    if (first) T.taskId = first.id;
+    T.total = modeSec("focus"); T.left = T.total; T.lit = -1;
+    restoreTimer();
+    renderAll();
+    renderAdhkar(true);
+    renderPrivacy();
+    subscribe();
+    registerVisit();
+    subscribeVisitors();
+  })();
+})();
+</script>
