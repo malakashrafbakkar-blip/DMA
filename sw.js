@@ -1,7 +1,7 @@
 /* DMA service worker: يخلّي التطبيق يفتح من غير نت بعد أول فتحة. غيّري رقم النسخة لما تحدّثي الملفات. */
 var VERSION = "dma-v1";
 var SHELL = ["./", "index.html", "quran.json", "adhkar.json", "manifest.webmanifest",
-  "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/apple-touch-icon.png"];
+  "icon.svg", "icon-192.png", "icon-512.png", "maskable-512.png", "apple-touch-icon.png"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(VERSION).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
